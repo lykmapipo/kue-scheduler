@@ -10,14 +10,10 @@
     "newcap": true,
     "noarg": true,
     "node": true,
+    "mocha":true,
     "quotmark": "single",
     "strict": true,
     "undef": true,
     "unused": true,
-    "globals": {
-        "describe": false,
-        "it": false,
-        "before": false,
-        "after": false
-    }
+    "expr": true
 }
