@@ -12,6 +12,7 @@ describe('KueScheduler', function() {
     });
 
     it('should be able to shedule job in later time', function(done) {
+
         done();
     });
 
