@@ -25,11 +25,22 @@
     "url": "https://github.com/lykmapipo/kue-scheduler/issues"
   },
   "homepage": "https://github.com/lykmapipo/kue-scheduler",
+  "dependencies": {
+    "cron": "^1.0.9",
+    "date.js": "^0.2.0",
+    "human-interval": "^0.1.4",
+    "node-uuid": "^1.4.3",
+    "redis": "0.12.1"
+  },
   "devDependencies": {
+    "chai": "^2.2.0",
+    "faker": "^2.1.2",
     "grunt": "^0.4.5",
     "grunt-contrib-jshint": "^0.11.1",
     "grunt-mocha-test": "^0.12.7",
     "jshint-stylish": "^1.0.1",
-    "mocha": "^2.2.4"
+    "kue": "^0.8.12",
+    "mocha": "^2.2.4",
+    "moment": "^2.10.2"
   }
 }
