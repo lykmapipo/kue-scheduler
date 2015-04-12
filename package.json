@@ -1,0 +1,28 @@
+{
+    "name": "kue-scheduler",
+    "version": "0.1.0",
+    "description": "A job scheduler for kue",
+    "main": "index.js",
+    "scripts": {
+        "test": "grunt test"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/lykmapipo/kue-scheduler.git"
+    },
+    "keywords": [
+        "schedule",
+        "every",
+        "now",
+        "at",
+        "delayed",
+        "jobs",
+        "redis"
+    ],
+    "author": "lykmapipo",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/lykmapipo/kue-scheduler/issues"
+    },
+    "homepage": "https://github.com/lykmapipo/kue-scheduler"
+}
