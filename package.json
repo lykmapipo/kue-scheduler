@@ -1,28 +1,34 @@
 {
-    "name": "kue-scheduler",
-    "version": "0.1.0",
-    "description": "A job scheduler for kue",
-    "main": "index.js",
-    "scripts": {
-        "test": "grunt test"
-    },
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/lykmapipo/kue-scheduler.git"
-    },
-    "keywords": [
-        "schedule",
-        "every",
-        "now",
-        "at",
-        "delayed",
-        "jobs",
-        "redis"
-    ],
-    "author": "lykmapipo",
-    "license": "MIT",
-    "bugs": {
-        "url": "https://github.com/lykmapipo/kue-scheduler/issues"
-    },
-    "homepage": "https://github.com/lykmapipo/kue-scheduler"
+  "name": "kue-scheduler",
+  "version": "0.1.0",
+  "description": "A job scheduler for kue",
+  "main": "index.js",
+  "scripts": {
+    "test": "grunt test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lykmapipo/kue-scheduler.git"
+  },
+  "keywords": [
+    "schedule",
+    "every",
+    "now",
+    "at",
+    "delayed",
+    "jobs",
+    "redis"
+  ],
+  "author": "lykmapipo",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/lykmapipo/kue-scheduler/issues"
+  },
+  "homepage": "https://github.com/lykmapipo/kue-scheduler",
+  "devDependencies": {
+    "grunt": "^0.4.5",
+    "grunt-contrib-jshint": "^0.11.1",
+    "grunt-mocha-test": "^0.12.7",
+    "mocha": "^2.2.4"
+  }
 }
