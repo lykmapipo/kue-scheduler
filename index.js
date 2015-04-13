@@ -5,6 +5,7 @@ var kue = require('kue');
 var redis = kue.redis;
 var _ = require('lodash');
 var async = require('async');
+var datejs = require('date.js');
 
 /**
  * @constructor
@@ -42,13 +43,22 @@ KueScheduler.prototype.every = function( /*interval, jobDefinition*/ ) {
 };
 
 
-KueScheduler.prototype.schedule = function( /*schedule, jobDefinition*/ ) {
-    // body...
+KueScheduler.prototype.schedule = function(schedule, jobDefinition, done) {
+    // var scheduler = this;
+
+    async
+        .waterfall(
+            [
+                function buildDelay(next) {
+                    next();
+                }
+            ],
+            function finish(error, job) {
+                done(error, job);
+            });
 };
 
-KueScheduler.prototype.at = function( /*time, jobDefinition*/ ) {
-    // body...
-};
+KueScheduler.prototype.at = function( /*time, jobDefinition*/ ) {};
 
 
 /**
@@ -155,6 +165,23 @@ KueScheduler.prototype._buildJob = function(jobDefinition, done) {
                     done(null, job, validations);
                 }
             });
+};
+
+/**
+ * @function
+ * @description parse date.js valid string and return a date object
+ * @param  {String}   str  a valid date.js date string
+ * @param  {Date}   offset  a valid date which will be used as offset in datejs
+ * @param  {Function} done a callback to invoke on error or success
+ * @private
+ */
+KueScheduler.prototype._parse = function(str, done) {
+    try {
+        var date = datejs(str);
+        return done(null, date);
+    } catch (error) {
+        return done(error);
+    }
 };
 
 /**

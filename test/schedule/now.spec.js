@@ -10,6 +10,7 @@ var faker = require('faker');
 describe('KueScheduler#now', function() {
     var kueScheduler;
     var nowQueue;
+
     before(function(done) {
         kueScheduler = new KueScheduler();
         nowQueue = kue.createQueue();
