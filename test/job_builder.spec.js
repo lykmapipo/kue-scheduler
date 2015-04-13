@@ -67,12 +67,13 @@ describe('KueScheduler#JobBuilder', function() {
                 data: data
             }, function(error, job) {
                 /*jshint camelcase:false */
+                expect(job.id).to.be.undefined;
                 expect(job.type).to.equal('email');
-                expect(job._max_attempts).to.equal(3);
+                expect(parseInt(job._max_attempts)).to.equal(3);
                 expect(job.data.to).to.equal(data.to);
 
                 expect(job._backoff).to.eql(backoff);
-                expect(job._priority).to.equal(0);
+                expect(parseInt(job._priority)).to.equal(0);
                 /*jshint camelcase:true */
 
                 done(error, job);
