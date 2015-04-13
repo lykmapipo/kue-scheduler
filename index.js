@@ -58,6 +58,7 @@ KueScheduler.prototype.now = function( /*jobDefinition*/ ) {
  * @param {Function} done a callback to invoke on eroro or success
  */
 KueScheduler.prototype._buildJob = function(jobDefinition, done) {
+    var scheduler = this;
     async
         .parallel({
                 isDefined: function(next) {
@@ -95,12 +96,6 @@ KueScheduler.prototype._buildJob = function(jobDefinition, done) {
                     //extend default job options with
                     //custom job definition
                     var jobDefaults = {
-                        priority: 'normal',
-                        attempts: 3,
-                        backoff: {
-                            delay: 60 * 1000,
-                            type: 'fixed'
-                        },
                         data: {
                             schedule: 'NOW'
                         }
@@ -109,12 +104,17 @@ KueScheduler.prototype._buildJob = function(jobDefinition, done) {
 
                     //instantiate kue job
                     var job =
-                        kue.createJob(jobDefinition.type, jobDefinition.data);
+                        scheduler.queue.createJob(
+                            jobDefinition.type,
+                            jobDefinition.data
+                        );
 
                     //apply all job attributes into kue job instance
                     _.keys(jobDefinition).forEach(function(attr) {
                         var fn = job[attr];
-                        if (_.isFunction(fn)) {
+                        var isFunction = !_.isUndefined(fn) && _.isFunction(fn);
+
+                        if (isFunction) {
                             fn.call(job, jobDefinition[attr]);
                         }
                     });

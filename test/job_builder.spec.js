@@ -47,4 +47,35 @@ describe('KueScheduler#JobBuilder', function() {
                 done(null, job);
             });
     });
+
+    it('should be able to instantiate a job and apply all job attributes', function(done) {
+        var data = {
+            to: faker.internet.email()
+        };
+
+        var backoff = {
+            delay: 60000,
+            type: 'fixed'
+        };
+
+        kueScheduler
+            ._buildJob({
+                type: 'email',
+                priority: 'normal',
+                attempts: 3,
+                backoff: backoff,
+                data: data
+            }, function(error, job) {
+                /*jshint camelcase:false */
+                expect(job.type).to.equal('email');
+                expect(job._max_attempts).to.equal(3);
+                expect(job.data.to).to.equal(data.to);
+
+                expect(job._backoff).to.eql(backoff);
+                expect(job._priority).to.equal(0);
+                /*jshint camelcase:true */
+
+                done(error, job);
+            });
+    });
 });

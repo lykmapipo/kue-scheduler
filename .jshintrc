@@ -15,5 +15,6 @@
     "strict": true,
     "undef": true,
     "unused": true,
-    "expr": true
+    "expr": true,
+    "ignore":true
 }
