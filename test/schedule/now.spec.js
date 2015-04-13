@@ -17,6 +17,10 @@ describe('KueScheduler#now', function() {
         done();
     });
 
+    after(function(done) {
+        nowQueue.shutdown(done);
+    });
+
     it('should be a function', function(done) {
         expect(kueScheduler.now).to.be.a('function');
         done();

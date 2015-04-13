@@ -42,24 +42,60 @@ KueScheduler.prototype.every = function( /*interval, jobDefinition*/ ) {
     // body...
 };
 
+/**
+ * @function
+ * @description schedules a job to run once at a given time. 
+ *              `when` can be a `Date` or a `String` such as `tomorrow at 5pm`.
+ * @param  {Date|String}   when      when should this job run
+ * @param  {Object}   jobDefinition valid kue job definition
+ * @param  {Function} done          a callback to invoke on error or success
+ * @public
+ */
+KueScheduler.prototype.schedule = function(when, jobDefinition, done) {
+    if (arguments.length < 3) {
+        done(new Error('Invalid number of parameters. See API doc.'));
+    }
 
-KueScheduler.prototype.schedule = function(schedule, jobDefinition, done) {
-    // var scheduler = this;
+    var scheduler = this;
 
     async
         .waterfall(
             [
-                function buildDelay(next) {
-                    next();
+                function computeDelay(next) {
+                    if (when instanceof Date) {
+                        next(null, when);
+                    } else {
+                        scheduler._parse(when, next);
+                    }
+                },
+                function setDelay(scheduledDate, next) {
+                    next(
+                        null,
+                        _.merge(jobDefinition, {
+                            delay: scheduledDate,
+                            data: {
+                                schedule: 'ONCE'
+                            }
+                        })
+                    );
+                },
+                function buildJob(delayedJobDefinition, next) {
+                    scheduler._buildJob(delayedJobDefinition, next);
+                },
+                function saveJob(job, validations, next) {
+                    job.save(function(error) {
+                        if (error) {
+                            next(error);
+                        } else {
+                            next(null, job);
+                        }
+                    });
                 }
             ],
             function finish(error, job) {
                 done(error, job);
             });
 };
-
-KueScheduler.prototype.at = function( /*time, jobDefinition*/ ) {};
-
 
 /**
  * @function
