@@ -4,6 +4,7 @@
 var kue = require('kue');
 var redis = kue.redis;
 var _ = require('lodash');
+var async = require('async');
 
 /**
  * @description A job scheduling utility for kue
@@ -21,7 +22,9 @@ function KueScheduler(options) {
         }
     }, options || {});
 
-    //kue queue for scheduler
+    //stup kue queue for scheduler
+    //which will also do all plumbing work 
+    //on setup job redis client
     this.queue = kue.createQueue(this.options);
 
     //a redis client for scheduling key expiry
@@ -47,6 +50,79 @@ KueScheduler.prototype.at = function( /*time, jobDefinition*/ ) {
 
 KueScheduler.prototype.now = function( /*jobDefinition*/ ) {
     // body...
+};
+
+/**
+ * @description build a kue job from a job definition
+ * @param  {Object} jobDefinition valid kue job attributes
+ * @param {Function} done a callback to invoke on eroro or success
+ */
+KueScheduler.prototype._buildJob = function(jobDefinition, done) {
+    async
+        .parallel({
+                isDefined: function(next) {
+                    //is job definition provided
+                    var isObject = _.isPlainObject(jobDefinition);
+                    if (!isObject) {
+                        next(new Error('Invalid job definition'));
+                    } else {
+                        next(null, true);
+                    }
+                },
+                isValid: function(next) {
+                    //check must job attributes
+                    var isValidJob = _.has(jobDefinition, 'type') &&
+                        (
+                            _.has(jobDefinition, 'data') &&
+                            _.isPlainObject(jobDefinition.data)
+                        );
+
+                    if (!isValidJob) {
+                        next(new Error('Missing job type or data'));
+                    } else {
+                        next(null, true);
+                    }
+                }
+            },
+            function finish(error, validations) {
+                //is not well formatted job
+                //back-off
+                if (error) {
+                    done(error);
+                }
+                //otherwise create a job
+                else {
+                    //extend default job options with
+                    //custom job definition
+                    var jobDefaults = {
+                        priority: 'normal',
+                        attempts: 3,
+                        backoff: {
+                            delay: 60 * 1000,
+                            type: 'fixed'
+                        },
+                        data: {
+                            schedule: 'NOW'
+                        }
+                    };
+                    jobDefinition = _.merge(jobDefaults, jobDefinition);
+
+                    //instantiate kue job
+                    var job =
+                        kue.createJob(jobDefinition.type, jobDefinition.data);
+
+                    //apply all job attributes into kue job instance
+                    _.keys(jobDefinition).forEach(function(attr) {
+                        var fn = job[attr];
+                        if (_.isFunction(fn)) {
+                            fn.call(job, jobDefinition[attr]);
+                        }
+                    });
+
+                    //we are done
+                    done(null, job, validations);
+                }
+            });
 };
 
 /**
