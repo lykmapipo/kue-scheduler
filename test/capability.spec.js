@@ -33,8 +33,4 @@ describe('KueScheduler#Capability', function() {
         done();
     });
 
-    it('should be able to execute job at a given time', function(done) {
-        expect(kueScheduler).to.respondTo('at');
-        done();
-    });
 });
