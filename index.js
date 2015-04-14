@@ -6,7 +6,7 @@ var redis = kue.redis;
 var _ = require('lodash');
 var async = require('async');
 var datejs = require('date.js');
-
+// var uuid = require('node-uuid');
 /**
  * @constructor
  * @description A job scheduling utility for kue
@@ -35,8 +35,28 @@ function KueScheduler(options) {
 
     //a redis client to listen for key expiry 
     this.listener = redis.createClientFactory(this.options);
-
+    //subscribe to key expiration events
+    this.listener.subscribe('__keyevent@0__:expired');
 }
+
+/**
+ * @function
+ * @description generate an expiration key that is used to track job scheduling
+ * @private
+ */
+KueScheduler.prototype._getJobExpiryKey = function(uuid) {
+    return 'kue:scheduler:' + uuid;
+};
+
+/**
+ * @function
+ * @description generate a storage key for the scheduled job data
+ * @private 
+ */
+KueScheduler.prototype._getJobDataKey = function(uuid) {
+    return 'kue:scheduler:data:' + uuid;
+};
+
 
 KueScheduler.prototype.every = function( /*interval, jobDefinition*/ ) {
     // body...

@@ -3,6 +3,7 @@
 //dependencies
 var expect = require('chai').expect;
 var path = require('path');
+var uuid = require('node-uuid');
 var KueScheduler = require(path.join(__dirname, '..', 'index'));
 
 describe('KueScheduler#Capability', function() {
@@ -30,6 +31,24 @@ describe('KueScheduler#Capability', function() {
 
     it('should be able to execute a job now', function(done) {
         expect(kueScheduler).to.respondTo('now');
+        done();
+    });
+
+    it('should be able to generate job expriration key', function(done) {
+        var jobuuid = uuid.v1();
+
+        expect(kueScheduler._getJobExpiryKey(jobuuid))
+            .to.be.equal('kue:scheduler:' + jobuuid);
+
+        done();
+    });
+
+    it('should be able to generate job data storage key', function(done) {
+        var jobuuid = uuid.v1();
+
+        expect(kueScheduler._getJobDataKey(jobuuid))
+            .to.be.equal('kue:scheduler:data:' + jobuuid);
+
         done();
     });
 
