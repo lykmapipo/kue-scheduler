@@ -52,4 +52,47 @@ describe('KueScheduler#Capability', function() {
         done();
     });
 
+    it('should be able to generate job uuid from job expriration key', function(done) {
+        var jobuuid = uuid.v1();
+        var jobEpiryKey = kueScheduler._getJobExpiryKey(jobuuid);
+
+        expect(kueScheduler._getJobUUID(jobEpiryKey))
+            .to.be.equal(jobuuid);
+
+        done();
+    });
+
+    describe('KueScheduler#Capability#CRUD', function() {
+        var jobuuid;
+        var jobDataKey;
+        var jobData;
+
+        before(function(done) {
+            jobuuid = uuid.v1();
+            jobDataKey = kueScheduler._getJobDataKey(jobuuid);
+            jobData = {
+                uuid: jobuuid
+            };
+
+            done();
+        });
+
+        it('should be able to save job data', function(done) {
+            kueScheduler
+                ._saveJobData(jobDataKey, jobData, function(error, _jobData) {
+                    expect(_jobData.uuid).to.equal(jobData.uuid);
+                    done(error, _jobData);
+                });
+        });
+
+        it('should be able to read job data', function(done) {
+            kueScheduler
+                ._readJobData(jobDataKey, function(error, _jobData) {
+                    expect(_jobData.uuid).to.equal(jobData.uuid);
+                    done(error, _jobData);
+                });
+        });
+
+    });
+
 });

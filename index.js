@@ -6,7 +6,7 @@ var redis = kue.redis;
 var _ = require('lodash');
 var async = require('async');
 var datejs = require('date.js');
-// var uuid = require('node-uuid');
+var uuid = require('node-uuid');
 /**
  * @constructor
  * @description A job scheduling utility for kue
@@ -18,7 +18,7 @@ function KueScheduler(options) {
     //extend default configurations
     //with custom provided configurations
     //and reference them for later use
-    this.options = _.extend({
+    this.options = _.merge({
         redis: {
             port: 6379,
             host: '127.0.0.1'
@@ -35,8 +35,10 @@ function KueScheduler(options) {
 
     //a redis client to listen for key expiry 
     this.listener = redis.createClientFactory(this.options);
-    //subscribe to key expiration events
-    this.listener.subscribe('__keyevent@0__:expired');
+
+    //listen for job key expiry
+    //and schedule kue jobs to run
+    this._subscribe();
 }
 
 /**
@@ -50,6 +52,15 @@ KueScheduler.prototype._getJobExpiryKey = function(uuid) {
 
 /**
  * @function
+ * @description generate job uuid from job expiry key
+ * @private
+ */
+KueScheduler.prototype._getJobUUID = function(jobExpiryKey) {
+    return jobExpiryKey.split(':')[2];
+};
+
+/**
+ * @function
  * @description generate a storage key for the scheduled job data
  * @private 
  */
@@ -57,9 +68,72 @@ KueScheduler.prototype._getJobDataKey = function(uuid) {
     return 'kue:scheduler:data:' + uuid;
 };
 
+/**
+ * @function
+ * @description save job data into redis backend
+ * @private
+ */
+KueScheduler.prototype._saveJobData = function(jobDataKey, jobData, done) {
+    this.scheduler.hmset(jobDataKey, jobData, function(error, response) {
+        done(error, jobData, response);
+    });
+};
 
-KueScheduler.prototype.every = function( /*interval, jobDefinition*/ ) {
-    // body...
+/**
+ * @function
+ * @description retrieved saved job data from redis backend
+ * @private
+ */
+KueScheduler.prototype._readJobData = function(jobDataKey, done) {
+    this.scheduler.hgetall(jobDataKey, function(error, data) {
+        done(error, data);
+    });
+};
+
+KueScheduler.prototype._subscribe = function() {
+    var scheduler = this;
+
+    //listen for job key expiry
+    this.listener.on('message', function(channel, jobExpiryKey) {
+        //get job uuid
+        scheduler._getJobUUID(jobExpiryKey);
+
+        //get saved job data
+
+    });
+
+    //subscribe to key expiration events
+    this.listener.subscribe('__keyevent@0__:expired');
+
+};
+
+
+KueScheduler.prototype.every = function(interval, jobDefinition) {
+    var scheduler = this;
+
+    //extend job definition with
+    //scheduling data
+    jobDefinition = _.merge(jobDefinition, {
+        data: {
+            schedule: 'RECCUR',
+            reccurInterval: interval
+        }
+    });
+
+    //generate job uuid
+    var jobUUID = uuid.v1();
+
+    async
+        .parallel({
+            jobExpiryKey: function(next) {
+                next(null, scheduler._getJobExpiryKey(jobUUID));
+            },
+            jobDataKey: function(next) {
+                next(null, scheduler._getJobDataKey(jobUUID));
+            }
+        }, function finish( /*error, results*/ ) {
+
+        });
 };
 
 /**
