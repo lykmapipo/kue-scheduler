@@ -4,6 +4,7 @@
 var expect = require('chai').expect;
 var path = require('path');
 var uuid = require('node-uuid');
+var later = require('later');
 var KueScheduler = require(path.join(__dirname, '..', 'index'));
 
 describe('KueScheduler#Capability', function() {
@@ -91,6 +92,58 @@ describe('KueScheduler#Capability', function() {
                     expect(_jobData.uuid).to.equal(jobData.uuid);
                     done(error, _jobData);
                 });
+        });
+
+    });
+
+    describe('KueScheduler#Capability#nextRun', function() {
+        var lastRun = new Date();
+        lastRun.setSeconds(0);
+
+        it('should be able to compute next run from human interval', function(done) {
+            var expectedNextRunTime = new Date(lastRun.valueOf());
+            expectedNextRunTime.setMinutes(expectedNextRunTime.getMinutes() + 5);
+
+            kueScheduler._computeNextRunTime({
+                reccurInterval: '5 minutes',
+                lastRun: lastRun
+            }, function(error, nextRun) {
+                if (error) {
+                    done(error);
+                } else {
+                    expect(nextRun).to.eql(expectedNextRunTime);
+                    done();
+                }
+
+            });
+
+        });
+
+        it('should be able to compute next run from later interval', function(done) {
+            var schedules = later.parse.text('every 5 minutes', true);
+            var nextRuns = later.schedule(schedules).next(5, lastRun);
+
+            kueScheduler._computeNextRunTime({
+                reccurInterval: 'every 5 minutes',
+                lastRun: lastRun
+            }, function(error, nextRun) {
+                if (error) {
+                    done(error);
+                } else {
+                    expect(nextRuns.toString()).to.contain(nextRun);
+                    done();
+                }
+
+            });
+        });
+
+        it('should throw `Invalid reccur interval` if interval is not human interval or cron interval', function(done) {
+            kueScheduler._computeNextRunTime({
+                reccurInterval: 'abcd'
+            }, function(error, nextRun) {
+                expect(error.message).to.equal('Invalid reccur interval');
+                done(null, nextRun);
+            });
         });
 
     });

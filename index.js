@@ -7,6 +7,9 @@ var _ = require('lodash');
 var async = require('async');
 var datejs = require('date.js');
 var uuid = require('node-uuid');
+var humanInterval = require('human-interval');
+var later = require('later');
+
 /**
  * @constructor
  * @description A job scheduling utility for kue
@@ -96,15 +99,78 @@ KueScheduler.prototype._subscribe = function() {
     //listen for job key expiry
     this.listener.on('message', function(channel, jobExpiryKey) {
         //get job uuid
-        scheduler._getJobUUID(jobExpiryKey);
+        var jobUUID = scheduler._getJobUUID(jobExpiryKey);
 
         //get saved job data
+        scheduler._readJobData(scheduler._getJobDataKey(jobUUID));
+
+        //compute next run
+        //create kue NOW job
+        //resave job expiration key
 
     });
 
     //subscribe to key expiration events
     this.listener.subscribe('__keyevent@0__:expired');
 
+};
+
+/**
+ * @function
+ * @description compute next run time of the given job data
+ * @private
+ */
+KueScheduler.prototype._computeNextRunTime = function(jobData, done) {
+    //grab job reccur interval
+    var interval = jobData.reccurInterval;
+
+    async
+        .parallel({
+            //compute next run from later text interval
+            laterText: function(after) {
+                try {
+                    //last run of the job is now
+                    var lastRun = jobData.lastRun || new Date();
+
+                    var schedules = later.parse.text(interval, true);
+                    var nextRuns = later.schedule(schedules).next(2, lastRun);
+
+                    //get differences in milliseconds
+                    //if is zero return next run after first one
+                    var isValidNexRun =
+                        (nextRuns[0].getTime() - lastRun.getTime()) > 0;
+
+                    if (isValidNexRun) {
+                        after(null, nextRuns[0]);
+                    } else {
+                        after(null, nextRuns[1]);
+                    }
+                } catch (ex) {
+                    //to allow parallel run with human interval
+                    after(null, null);
+                }
+            },
+            //compute next run from human interval
+            human: function(next) {
+                try {
+                    //last run of the job is now
+                    var lastRun = jobData.lastRun || new Date();
+
+                    next(null, new Date(lastRun.valueOf() + humanInterval(interval)));
+                } catch (ex) {
+                    //to allow parallel run with cron interval
+                    next(null, null);
+                }
+            }
+        }, function finish(error, results) {
+            if (!_.isNull(results.laterText)) {
+                return done(null, results.laterText);
+            } else if (!_.isNull(results.human)) {
+                return done(null, results.human);
+            } else {
+                return done(new Error('Invalid reccur interval'));
+            }
+        });
 };
 
 
