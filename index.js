@@ -9,6 +9,7 @@ var datejs = require('date.js');
 var uuid = require('node-uuid');
 var humanInterval = require('human-interval');
 var CronTime = require('cron').CronTime;
+var noop = function() {};
 
 /**
  * @constructor
@@ -95,20 +96,43 @@ KueScheduler.prototype._readJobData = function(jobDataKey, done) {
 };
 
 KueScheduler.prototype._subscribe = function() {
-    var scheduler = this;
+    var self = this;
 
     //listen for job key expiry
     this.listener.on('message', function(channel, jobExpiryKey) {
         //get job uuid
-        var jobUUID = scheduler._getJobUUID(jobExpiryKey);
+        var jobUUID = self._getJobUUID(jobExpiryKey);
 
         //get saved job data
-        scheduler._readJobData(scheduler._getJobDataKey(jobUUID));
+        var jobData = self._readJobData(self._getJobDataKey(jobUUID));
 
-        //compute next run
-        //create kue NOW job
-        //resave job expiration key
 
+        async
+            .waterfall(
+                [
+                    //compute next run time
+                    function(next) {
+                        self._computeNextRunTime(jobData, next);
+                    },
+                    //resave the key to rerun this job again
+                    function(nextRunTime, next) {
+                        var now = new Date();
+                        self
+                            .scheduler
+                            .set(
+                                jobExpiryKey,
+                                '',
+                                'PX',
+                                nextRunTime.getTime() - now.getTime(),
+                                next
+                            );
+                    },
+                    //create kue NOW job
+                    function(response, next) {
+                        self.now(jobData, next);
+                    },
+                    //TODO use event emitter to emit any error
+                ], noop);
     });
 
     //subscribe to key expiration events
@@ -134,12 +158,13 @@ KueScheduler.prototype._computeNextRunTime = function(jobData, done) {
                     //last run of the job is now
                     var lastRun = jobData.lastRun || new Date();
 
+                    //compute next date from the cron interval
                     var cronTime = new CronTime(interval);
                     var nextRun = cronTime._getNextDateFrom(lastRun);
 
+                    // Handle cronTime giving back the same date 
+                    // for the next run time
                     if (nextRun.valueOf() === lastRun.valueOf()) {
-                        // Handle cronTime giving back the same date 
-                        // for the next run time
                         nextRun =
                             cronTime._getNextDateFrom(
                                 new Date(lastRun.valueOf() + 1000)
@@ -188,7 +213,8 @@ KueScheduler.prototype._computeNextRunTime = function(jobData, done) {
 
 
 KueScheduler.prototype.every = function(interval, jobDefinition) {
-    var scheduler = this;
+
+    var self = this;
 
     //extend job definition with
     //scheduling data
@@ -205,13 +231,23 @@ KueScheduler.prototype.every = function(interval, jobDefinition) {
     async
         .parallel({
             jobExpiryKey: function(next) {
-                next(null, scheduler._getJobExpiryKey(jobUUID));
+                next(null, self._getJobExpiryKey(jobUUID));
             },
             jobDataKey: function(next) {
-                next(null, scheduler._getJobDataKey(jobUUID));
+                next(null, self._getJobDataKey(jobUUID));
+            },
+            nextRun: function(next) {
+                self._computeNextRunTime(jobDefinition, next);
             }
-        }, function finish( /*error, results*/ ) {
+        }, function finish(error, results) {
+            var now = new Date();
+            var delay = results.nextRunTime.getTime() - now.getTime();
 
+            //save job data
+            self.saveJob(results.jobExpiryKey, jobDefinition, noop);
+
+            //save key an wait for it to expiry
+            self.scheduler.set(results.jobExpiryKey, '', 'PX', delay, noop);
         });
 };
 
@@ -229,7 +265,7 @@ KueScheduler.prototype.schedule = function(when, jobDefinition, done) {
         done(new Error('Invalid number of parameters. See API doc.'));
     }
 
-    var scheduler = this;
+    var self = this;
 
     async
         .waterfall(
@@ -238,7 +274,7 @@ KueScheduler.prototype.schedule = function(when, jobDefinition, done) {
                     if (when instanceof Date) {
                         next(null, when);
                     } else {
-                        scheduler._parse(when, next);
+                        self._parse(when, next);
                     }
                 },
                 function setDelay(scheduledDate, next) {
@@ -253,7 +289,7 @@ KueScheduler.prototype.schedule = function(when, jobDefinition, done) {
                     );
                 },
                 function buildJob(delayedJobDefinition, next) {
-                    scheduler._buildJob(delayedJobDefinition, next);
+                    self._buildJob(delayedJobDefinition, next);
                 },
                 function saveJob(job, validations, next) {
                     job.save(function(error) {
@@ -278,13 +314,13 @@ KueScheduler.prototype.schedule = function(when, jobDefinition, done) {
  * @public
  */
 KueScheduler.prototype.now = function(jobDefinition, done) {
-    var scheduler = this;
+    var self = this;
 
     async
         .waterfall(
             [
                 function buildJob(next) {
-                    scheduler._buildJob(jobDefinition, next);
+                    self._buildJob(jobDefinition, next);
                 },
                 function saveJob(job, validations, next) {
                     job.save(function(error) {
@@ -309,7 +345,7 @@ KueScheduler.prototype.now = function(jobDefinition, done) {
  * @private
  */
 KueScheduler.prototype._buildJob = function(jobDefinition, done) {
-    var scheduler = this;
+    var self = this;
     async
         .parallel({
                 isDefined: function(next) {
@@ -355,7 +391,7 @@ KueScheduler.prototype._buildJob = function(jobDefinition, done) {
 
                     //instantiate kue job
                     var job =
-                        scheduler.queue.createJob(
+                        self.queue.createJob(
                             jobDefinition.type,
                             jobDefinition.data
                         );
@@ -392,41 +428,6 @@ KueScheduler.prototype._parse = function(str, done) {
         return done(error);
     }
 };
-
-/**
- * kue job schema
- * {
- *       id: Number,
- *       type: String,
- *       data: Object,
- *       result: String,
- *       priority: Number,
- *       progress: Number,
- *       state: String,
- *       error: String|Object,
- *       created_at: Date,
- *       promote_at: Date,
- *       updated_at: Date,
- *       failed_at: Date,
- *       duration: Number,
- *       delay: Number|Date,
- *       attempts: {
- *           made: Number,
- *           remaining: Number,
- *           max: Number
- *       }
- *   };
- */
-
-/**
- * kue job events
- * - `enqueue` the job is now queued
- *- `promotion` the job is promoted from delayed state to queued
- *- `progress` the job's progress ranging from 0-100
- *- 'failed attempt' the job has failed, but has remaining attempts yet
- *- `failed` the job has failed and has no remaining attempts
- *- `complete` the job has completed
- */
 
 /**
  * @description export kue scheduler
