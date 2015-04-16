@@ -8,7 +8,7 @@ var async = require('async');
 var datejs = require('date.js');
 var uuid = require('node-uuid');
 var humanInterval = require('human-interval');
-var later = require('later');
+var CronTime = require('cron').CronTime;
 
 /**
  * @constructor
@@ -22,6 +22,7 @@ function KueScheduler(options) {
     //with custom provided configurations
     //and reference them for later use
     this.options = _.merge({
+        prefix: 'p',
         redis: {
             port: 6379,
             host: '127.0.0.1'
@@ -50,7 +51,7 @@ function KueScheduler(options) {
  * @private
  */
 KueScheduler.prototype._getJobExpiryKey = function(uuid) {
-    return 'kue:scheduler:' + uuid;
+    return this.options.prefix + ':scheduler:' + uuid;
 };
 
 /**
@@ -68,7 +69,7 @@ KueScheduler.prototype._getJobUUID = function(jobExpiryKey) {
  * @private 
  */
 KueScheduler.prototype._getJobDataKey = function(uuid) {
-    return 'kue:scheduler:data:' + uuid;
+    return this.options.prefix + ':scheduler:data:' + uuid;
 };
 
 /**
@@ -124,50 +125,62 @@ KueScheduler.prototype._computeNextRunTime = function(jobData, done) {
     //grab job reccur interval
     var interval = jobData.reccurInterval;
 
+
     async
         .parallel({
-            //compute next run from later text interval
-            laterText: function(after) {
+            //compute next run from cron interval
+            cron: function(after) {
                 try {
                     //last run of the job is now
                     var lastRun = jobData.lastRun || new Date();
 
-                    var schedules = later.parse.text(interval, true);
-                    var nextRuns = later.schedule(schedules).next(2, lastRun);
+                    var cronTime = new CronTime(interval);
+                    var nextRun = cronTime._getNextDateFrom(lastRun);
 
-                    //get differences in milliseconds
-                    //if is zero return next run after first one
-                    var isValidNexRun =
-                        (nextRuns[0].getTime() - lastRun.getTime()) > 0;
-
-                    if (isValidNexRun) {
-                        after(null, nextRuns[0]);
-                    } else {
-                        after(null, nextRuns[1]);
+                    if (nextRun.valueOf() === lastRun.valueOf()) {
+                        // Handle cronTime giving back the same date 
+                        // for the next run time
+                        nextRun =
+                            cronTime._getNextDateFrom(
+                                new Date(lastRun.valueOf() + 1000)
+                            );
                     }
+
+                    after(null, nextRun.toDate());
+
                 } catch (ex) {
-                    //to allow parallel run with human interval
+                    //to allow parallel run with other interval parser
                     after(null, null);
                 }
             },
             //compute next run from human interval
-            human: function(next) {
+            human: function(after) {
                 try {
                     //last run of the job is now
                     var lastRun = jobData.lastRun || new Date();
 
-                    next(null, new Date(lastRun.valueOf() + humanInterval(interval)));
+                    var nextRun =
+                        new Date(lastRun.valueOf() + humanInterval(interval));
+
+                    after(null, nextRun);
                 } catch (ex) {
-                    //to allow parallel run with cron interval
-                    next(null, null);
+                    //to allow parallel run with other interval parser
+                    after(null, null);
                 }
             }
         }, function finish(error, results) {
-            if (!_.isNull(results.laterText)) {
-                return done(null, results.laterText);
-            } else if (!_.isNull(results.human)) {
+            //parsed as later cron interval
+            if (!_.isNull(results.cron)) {
+                return done(null, results.cron);
+            }
+
+            //parsed as human interval
+            else if (!_.isNull(results.human)) {
                 return done(null, results.human);
-            } else {
+            }
+
+            //all parser failed
+            else {
                 return done(new Error('Invalid reccur interval'));
             }
         });

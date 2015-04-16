@@ -4,14 +4,17 @@
 var expect = require('chai').expect;
 var path = require('path');
 var uuid = require('node-uuid');
-var later = require('later');
+// var later = require('later');
 var KueScheduler = require(path.join(__dirname, '..', 'index'));
 
 describe('KueScheduler#Capability', function() {
     var kueScheduler;
+    var options = {
+        prefix: 'p'
+    };
 
     before(function(done) {
-        kueScheduler = new KueScheduler();
+        kueScheduler = new KueScheduler(options);
         done();
     });
 
@@ -39,7 +42,7 @@ describe('KueScheduler#Capability', function() {
         var jobuuid = uuid.v1();
 
         expect(kueScheduler._getJobExpiryKey(jobuuid))
-            .to.be.equal('kue:scheduler:' + jobuuid);
+            .to.be.equal(options.prefix + ':scheduler:' + jobuuid);
 
         done();
     });
@@ -48,7 +51,7 @@ describe('KueScheduler#Capability', function() {
         var jobuuid = uuid.v1();
 
         expect(kueScheduler._getJobDataKey(jobuuid))
-            .to.be.equal('kue:scheduler:data:' + jobuuid);
+            .to.be.equal(options.prefix + ':scheduler:data:' + jobuuid);
 
         done();
     });
@@ -119,18 +122,18 @@ describe('KueScheduler#Capability', function() {
 
         });
 
-        it('should be able to compute next run from later interval', function(done) {
-            var schedules = later.parse.text('every 5 minutes', true);
-            var nextRuns = later.schedule(schedules).next(5, lastRun);
+        it('should be able to compute next run from cron interval', function(done) {
+            var lastRun = new Date();
+            lastRun.setSeconds(0);
 
             kueScheduler._computeNextRunTime({
-                reccurInterval: 'every 5 minutes',
+                reccurInterval: '* * * * * *',
                 lastRun: lastRun
             }, function(error, nextRun) {
                 if (error) {
                     done(error);
                 } else {
-                    expect(nextRuns.toString()).to.contain(nextRun);
+                    expect(nextRun.getSeconds()).to.equal(lastRun.getSeconds() + 1);
                     done();
                 }
 
