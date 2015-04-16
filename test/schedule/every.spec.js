@@ -37,7 +37,6 @@ describe('KueScheduler#every', function() {
         };
 
         everyQueue.process('every', function(job, finalize) {
-            console.log(job);
             /*jshint camelcase:false */
             expect(job.id).to.exist;
             expect(job.type).to.equal('every');
