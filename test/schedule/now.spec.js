@@ -36,10 +36,10 @@ describe('KueScheduler#now', function() {
             type: 'fixed'
         };
 
-        nowQueue.process('email', function(job, finalize) {
+        nowQueue.process('now', function(job, finalize) {
             /*jshint camelcase:false */
             expect(job.id).to.exist;
-            expect(job.type).to.equal('email');
+            expect(job.type).to.equal('now');
             expect(parseInt(job._max_attempts)).to.equal(3);
             expect(job.data.to).to.equal(data.to);
             expect(job.data.schedule).to.equal('NOW');
@@ -49,12 +49,13 @@ describe('KueScheduler#now', function() {
             /*jshint camelcase:true */
 
             finalize();
+
             done();
         });
 
 
         kueScheduler.now({
-            type: 'email',
+            type: 'now',
             priority: 'normal',
             attempts: 3,
             backoff: backoff,
@@ -65,7 +66,7 @@ describe('KueScheduler#now', function() {
             }
             /*jshint camelcase:false */
             expect(job.id).to.exist;
-            expect(job.type).to.equal('email');
+            expect(job.type).to.equal('now');
             expect(parseInt(job._max_attempts)).to.equal(3);
             expect(job.data.to).to.equal(data.to);
             expect(job.data.schedule).to.equal('NOW');

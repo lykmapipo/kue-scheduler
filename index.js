@@ -79,7 +79,7 @@ KueScheduler.prototype._getJobDataKey = function(uuid) {
  * @private
  */
 KueScheduler.prototype._saveJobData = function(jobDataKey, jobData, done) {
-    this.scheduler.hmset(jobDataKey, jobData, function(error, response) {
+    this.scheduler.set(jobDataKey, JSON.stringify(jobData), function(error, response) {
         done(error, jobData, response);
     });
 };
@@ -90,8 +90,8 @@ KueScheduler.prototype._saveJobData = function(jobDataKey, jobData, done) {
  * @private
  */
 KueScheduler.prototype._readJobData = function(jobDataKey, done) {
-    this.scheduler.hgetall(jobDataKey, function(error, data) {
-        done(error, data);
+    this.scheduler.get(jobDataKey, function(error, data) {
+        done(error, JSON.parse(data));
     });
 };
 
@@ -100,36 +100,34 @@ KueScheduler.prototype._subscribe = function() {
 
     //listen for job key expiry
     this.listener.on('message', function(channel, jobExpiryKey) {
-        //get job uuid
-        var jobUUID = self._getJobUUID(jobExpiryKey);
-
-        //get saved job data
-        var jobData = self._readJobData(self._getJobDataKey(jobUUID));
-
+        var jobDefinition;
 
         async
             .waterfall(
                 [
-                    //compute next run time
+                    //get job data
                     function(next) {
+                        //get job uuid
+                        var jobUUID = self._getJobUUID(jobExpiryKey);
+
+                        //get saved job data
+                        self._readJobData(self._getJobDataKey(jobUUID), next);
+                    },
+                    //compute next run time
+                    function(jobData, next) {
+                        jobDefinition = jobData;
                         self._computeNextRunTime(jobData, next);
                     },
                     //resave the key to rerun this job again
                     function(nextRunTime, next) {
                         var now = new Date();
-                        self
-                            .scheduler
-                            .set(
-                                jobExpiryKey,
-                                '',
-                                'PX',
-                                nextRunTime.getTime() - now.getTime(),
-                                next
-                            );
+                        var delay = nextRunTime.getTime() - now.getTime();
+
+                        self.scheduler.set(jobExpiryKey, '', 'PX', delay, next);
                     },
                     //create kue NOW job
                     function(response, next) {
-                        self.now(jobData, next);
+                        self.now(jobDefinition, next);
                     },
                     //TODO use event emitter to emit any error
                 ], noop);
@@ -219,9 +217,9 @@ KueScheduler.prototype.every = function(interval, jobDefinition) {
     //extend job definition with
     //scheduling data
     jobDefinition = _.merge(jobDefinition, {
+        reccurInterval: interval,
         data: {
-            schedule: 'RECCUR',
-            reccurInterval: interval
+            schedule: 'RECCUR'
         }
     });
 
@@ -236,15 +234,16 @@ KueScheduler.prototype.every = function(interval, jobDefinition) {
             jobDataKey: function(next) {
                 next(null, self._getJobDataKey(jobUUID));
             },
-            nextRun: function(next) {
+            nextRunTime: function(next) {
                 self._computeNextRunTime(jobDefinition, next);
             }
         }, function finish(error, results) {
+
             var now = new Date();
             var delay = results.nextRunTime.getTime() - now.getTime();
 
             //save job data
-            self.saveJob(results.jobExpiryKey, jobDefinition, noop);
+            self._saveJobData(results.jobDataKey, jobDefinition, noop);
 
             //save key an wait for it to expiry
             self.scheduler.set(results.jobExpiryKey, '', 'PX', delay, noop);
