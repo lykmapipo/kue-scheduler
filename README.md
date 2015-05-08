@@ -19,7 +19,7 @@ $ npm install kue-scheduler
 
 (The MIT License)
 
-Copyright (c) 2011 lykmapipo
+Copyright (c) 2011 lykmapipo && Contributors
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
