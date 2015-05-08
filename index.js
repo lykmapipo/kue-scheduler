@@ -25,7 +25,7 @@ var noop = function() {};
  */
 Queue.prototype._getJobExpiryKey = function(uuid) {
     //this refer to kue Queue instance context
-    return this.client.prefix + ':scheduler:' + uuid;
+    return this.options.prefix + ':scheduler:' + uuid;
 };
 
 
@@ -47,7 +47,7 @@ Queue.prototype._getJobUUID = function(jobExpiryKey) {
  */
 Queue.prototype._getJobDataKey = function(uuid) {
     //this refer to kue Queue instance context
-    return this.client.prefix + ':scheduler:data:' + uuid;
+    return this.options.prefix + ':scheduler:data:' + uuid;
 };
 
 
@@ -466,6 +466,9 @@ kue.createQueue = function(options) {
             host: '127.0.0.1'
         }
     }, options || {});
+
+    //reference options
+    Queue.prototype.options = options;
 
     var queue = createQueue.call(kue, options);
 
