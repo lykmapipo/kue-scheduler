@@ -215,10 +215,10 @@ Queue.prototype._computeNextRunTime = function(jobData, done) {
  * @description schedule a job to run every after a specified interval
  * @param  {String} interval      scheduled interval in or human interval or 
  *                                cron format
- * @param  {Object} jobDefinition valid kue job instance properties in hash form
+ * @param  {Job} job valid kue job instance which has not been saved
  * @private
  */
-Queue.prototype.every = function(interval, jobDefinition) {
+Queue.prototype.every = function(interval, job) {
     //this refer to kue Queue instance context
     //
     if (arguments.length < 2) {
@@ -229,7 +229,7 @@ Queue.prototype.every = function(interval, jobDefinition) {
 
     //extend job definition with
     //scheduling data
-    jobDefinition = _.merge(jobDefinition, {
+    var jobDefinition = _.merge(job.toJSON(), {
         reccurInterval: interval,
         data: {
             schedule: 'RECCUR'
@@ -268,11 +268,11 @@ Queue.prototype.every = function(interval, jobDefinition) {
  * @description schedules a job to run once at a given time. 
  *              `when` can be a `Date` or a `String` such as `tomorrow at 5pm`.
  * @param  {Date|String}   when      when should this job run
- * @param  {Object}   jobDefinition valid kue job definition
+ * @param  {Job}   jobDefinition valid kue job instance which has not been saved
  * @param  {Function} done          a callback to invoke on error or success
  * @public
  */
-Queue.prototype.schedule = function(when, jobDefinition, done) {
+Queue.prototype.schedule = function(when, job, done) {
     //this refer to kue Queue instance context
     //
     if (arguments.length < 3) {
@@ -280,6 +280,10 @@ Queue.prototype.schedule = function(when, jobDefinition, done) {
     }
 
     var self = this;
+
+    var jobDefinition = _.extend(job.toJSON(), {
+        backoff: job._backoff
+    });
 
     async
         .waterfall(
@@ -324,11 +328,11 @@ Queue.prototype.schedule = function(when, jobDefinition, done) {
 /**
  * @function
  * @description schedule a job to be executed immediatelly after being saved
- * @param  {Object}   jobDefinition a valid kue job definition
+ * @param  {Job}   job a valid kue job instance which has not been saved
  * @param  {Function} done          a callback to invoke lon success or error
  * @public
  */
-Queue.prototype.now = function(jobDefinition, done) {
+Queue.prototype.now = function(job, done) {
     //this refer to kue Queue instance context
     //
     if (arguments.length < 2) {
@@ -336,6 +340,10 @@ Queue.prototype.now = function(jobDefinition, done) {
     }
 
     var self = this;
+
+    var jobDefinition = _.extend(job.toJSON(), {
+        backoff: job._backoff
+    });
 
     async
         .waterfall(
@@ -429,6 +437,17 @@ Queue.prototype._buildJob = function(jobDefinition, done) {
                             fn.call(job, jobDefinition[attr]);
                         }
                     });
+
+                    //attach max attempts
+                    if (jobDefinition.attempts) {
+                        job.attempts(jobDefinition.attempts.max);
+                    }
+
+                    /*jshint camelcase:false*/
+                    if (jobDefinition._max_attempts) {
+                        job.attempts(jobDefinition._max_attempts);
+                    }
+                    /*jshint camelcase:true*/
 
                     //we are done
                     done(null, job, validations);

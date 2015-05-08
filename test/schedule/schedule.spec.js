@@ -61,14 +61,15 @@ describe('Queue#schedule', function() {
 
         Queue.promote(3000);
 
+        var job = Queue
+            .createJob('schedule', data)
+            .attempts(3)
+            .backoff(backoff)
+            .priority('normal');
+
         Queue.schedule(
-            '2 seconds from now', {
-                type: 'schedule',
-                priority: 'normal',
-                attempts: 3,
-                backoff: backoff,
-                data: data
-            },
+            '2 seconds from now',
+            job,
             function(error, job) {
                 if (error) {
                     done(error);

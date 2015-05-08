@@ -24,6 +24,7 @@ describe('Queue#every', function() {
     });
 
     it('should be able to schedule a job to run every 2 seconds from now', function(done) {
+
         var data = {
             to: faker.internet.email()
         };
@@ -48,14 +49,14 @@ describe('Queue#every', function() {
             finalize();
         });
 
+        var job = Queue
+            .createJob('every', data)
+            .attempts(3)
+            .backoff(backoff)
+            .priority('normal');
+
         Queue
-            .every('4 seconds', {
-                type: 'every',
-                priority: 'normal',
-                attempts: 3,
-                backoff: backoff,
-                data: data
-            });
+            .every('4 seconds', job);
 
         //wait for two jobs to be runned
         setTimeout(function() {

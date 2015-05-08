@@ -17,7 +17,36 @@ $ redis-cli config set notify-keyspace-events KEAxe
 $ npm install kue-scheduler
 ```
 
-## Usage (WIP)
+## Usage
+Require `kue-scheduler` after `kue` to be able to schedule jobs.
+```js
+var kue = require('kue');
+require('kue-scheduler')
+
+//or just simply
+var kue = require('kue-scheduler');
+```
+
+Schedule a job to run every `two seconds`
+```js
+var kue = require('kue-scheduler');
+var Queue = kue.createQueue();
+
+//schedule a job
+Queue
+    .every('4 seconds', {
+        type: 'every',
+        priority: 'normal',
+        attempts: 3,
+        backoff: backoff,
+        data: data
+    });
+
+//somewhere process your scheduled jobs
+Queue.process('every', function(job, finalize) {
+    ...
+});
+```
 
 ## License 
 

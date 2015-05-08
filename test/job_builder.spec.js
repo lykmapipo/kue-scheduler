@@ -63,7 +63,9 @@ describe('Queue JobBuilder', function() {
             ._buildJob({
                 type: 'email',
                 priority: 'normal',
-                attempts: 3,
+                attempts: {
+                    max: 3
+                },
                 backoff: backoff,
                 data: data
             }, function(error, job) {

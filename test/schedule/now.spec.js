@@ -33,7 +33,9 @@ describe('Queue#now', function() {
             type: 'fixed'
         };
 
+
         Queue.process('now', function(job, finalize) {
+
             /*jshint camelcase:false */
             expect(job.id).to.exist;
             expect(job.type).to.equal('now');
@@ -50,17 +52,17 @@ describe('Queue#now', function() {
             done();
         });
 
+        var job = Queue
+            .createJob('now', data)
+            .attempts(3)
+            .backoff(backoff)
+            .priority('normal');
 
-        Queue.now({
-            type: 'now',
-            priority: 'normal',
-            attempts: 3,
-            backoff: backoff,
-            data: data
-        }, function(error, job) {
+        Queue.now(job, function(error, job) {
             if (error) {
                 done(error);
             }
+
             /*jshint camelcase:false */
             expect(job.id).to.exist;
             expect(job.type).to.equal('now');
