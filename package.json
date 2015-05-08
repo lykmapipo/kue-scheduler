@@ -26,17 +26,18 @@
     },
     "homepage": "https://github.com/lykmapipo/kue-scheduler",
     "dependencies": {
-        "async": "^0.9.0",
         "cron": "^1.0.9",
         "date.js": "^0.2.0",
         "human-interval": "^0.1.4",
-        "lodash": "^3.6.0",
         "node-uuid": "^1.4.3"
     },
     "peerDependencies": {
-        "kue": "^0.8.12"
+        "async": "^0.9.0",
+        "kue": "^0.8.12",
+        "lodash": "^3.6.0"
     },
     "devDependencies": {
+        "async": "^0.9.0",
         "chai": "^2.2.0",
         "faker": "^2.1.2",
         "grunt": "^0.4.5",
@@ -44,6 +45,7 @@
         "grunt-mocha-test": "^0.12.7",
         "jshint-stylish": "^1.0.1",
         "kue": "^0.8.12",
+        "lodash": "^3.6.0",
         "mocha": "^2.2.4",
         "moment": "^2.10.2"
     }

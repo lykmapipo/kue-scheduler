@@ -10,11 +10,11 @@
     "newcap": true,
     "noarg": true,
     "node": true,
-    "mocha":true,
+    "mocha": true,
     "quotmark": "single",
     "strict": true,
     "undef": true,
     "unused": true,
     "expr": true,
-    "ignore":true
+    "ignore": true
 }

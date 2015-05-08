@@ -4,44 +4,38 @@
 var expect = require('chai').expect;
 var path = require('path');
 var uuid = require('node-uuid');
-// var later = require('later');
-var KueScheduler = require(path.join(__dirname, '..', 'index'));
+var kue = require(path.join(__dirname, '..', 'index'));
+var Queue;
+var options = {
+    prefix: 'q'
+};
 
-describe('KueScheduler#Capability', function() {
-    var kueScheduler;
-    var options = {
-        prefix: 'p'
-    };
+describe('Queue Scheduling Capabilities', function() {
 
     before(function(done) {
-        kueScheduler = new KueScheduler(options);
-        done();
-    });
-
-    it('should be a functional constructor', function(done) {
-        expect(KueScheduler).to.be.a('function');
+        Queue = kue.createQueue();
         done();
     });
 
     it('should be able to shedule job in later time', function(done) {
-        expect(kueScheduler).to.respondTo('schedule');
+        expect(Queue).to.respondTo('schedule');
         done();
     });
 
     it('should be able to execute jobs every after specific time interval', function(done) {
-        expect(kueScheduler).to.respondTo('every');
+        expect(Queue).to.respondTo('every');
         done();
     });
 
     it('should be able to execute a job now', function(done) {
-        expect(kueScheduler).to.respondTo('now');
+        expect(Queue).to.respondTo('now');
         done();
     });
 
     it('should be able to generate job expriration key', function(done) {
         var jobuuid = uuid.v1();
 
-        expect(kueScheduler._getJobExpiryKey(jobuuid))
+        expect(Queue._getJobExpiryKey(jobuuid))
             .to.be.equal(options.prefix + ':scheduler:' + jobuuid);
 
         done();
@@ -50,7 +44,7 @@ describe('KueScheduler#Capability', function() {
     it('should be able to generate job data storage key', function(done) {
         var jobuuid = uuid.v1();
 
-        expect(kueScheduler._getJobDataKey(jobuuid))
+        expect(Queue._getJobDataKey(jobuuid))
             .to.be.equal(options.prefix + ':scheduler:data:' + jobuuid);
 
         done();
@@ -58,22 +52,22 @@ describe('KueScheduler#Capability', function() {
 
     it('should be able to generate job uuid from job expriration key', function(done) {
         var jobuuid = uuid.v1();
-        var jobEpiryKey = kueScheduler._getJobExpiryKey(jobuuid);
+        var jobEpiryKey = Queue._getJobExpiryKey(jobuuid);
 
-        expect(kueScheduler._getJobUUID(jobEpiryKey))
+        expect(Queue._getJobUUID(jobEpiryKey))
             .to.be.equal(jobuuid);
 
         done();
     });
 
-    describe('KueScheduler#Capability#CRUD', function() {
+    describe('Queue CRUD Capabilities', function() {
         var jobuuid;
         var jobDataKey;
         var jobData;
 
         before(function(done) {
             jobuuid = uuid.v1();
-            jobDataKey = kueScheduler._getJobDataKey(jobuuid);
+            jobDataKey = Queue._getJobDataKey(jobuuid);
             jobData = {
                 uuid: jobuuid
             };
@@ -82,7 +76,7 @@ describe('KueScheduler#Capability', function() {
         });
 
         it('should be able to save job data', function(done) {
-            kueScheduler
+            Queue
                 ._saveJobData(jobDataKey, jobData, function(error, _jobData) {
                     expect(_jobData.uuid).to.equal(jobData.uuid);
                     done(error, _jobData);
@@ -90,7 +84,7 @@ describe('KueScheduler#Capability', function() {
         });
 
         it('should be able to read job data', function(done) {
-            kueScheduler
+            Queue
                 ._readJobData(jobDataKey, function(error, _jobData) {
                     expect(_jobData.uuid).to.equal(jobData.uuid);
                     done(error, _jobData);
@@ -99,7 +93,7 @@ describe('KueScheduler#Capability', function() {
 
     });
 
-    describe('KueScheduler#Capability#nextRun', function() {
+    describe('Queue `nextRun` Capabilities', function() {
         var lastRun = new Date();
         lastRun.setSeconds(0);
 
@@ -107,7 +101,7 @@ describe('KueScheduler#Capability', function() {
             var expectedNextRunTime = new Date(lastRun.valueOf());
             expectedNextRunTime.setMinutes(expectedNextRunTime.getMinutes() + 5);
 
-            kueScheduler._computeNextRunTime({
+            Queue._computeNextRunTime({
                 reccurInterval: '5 minutes',
                 lastRun: lastRun
             }, function(error, nextRun) {
@@ -126,7 +120,7 @@ describe('KueScheduler#Capability', function() {
             var lastRun = new Date();
             lastRun.setSeconds(0);
 
-            kueScheduler._computeNextRunTime({
+            Queue._computeNextRunTime({
                 reccurInterval: '* * * * * *',
                 lastRun: lastRun
             }, function(error, nextRun) {
@@ -141,7 +135,7 @@ describe('KueScheduler#Capability', function() {
         });
 
         it('should throw `Invalid reccur interval` if interval is not human interval or cron interval', function(done) {
-            kueScheduler._computeNextRunTime({
+            Queue._computeNextRunTime({
                 reccurInterval: 'abcd'
             }, function(error, nextRun) {
                 expect(error.message).to.equal('Invalid reccur interval');

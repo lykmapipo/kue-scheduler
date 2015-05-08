@@ -5,31 +5,29 @@ var expect = require('chai').expect;
 var path = require('path');
 var kue = require('kue');
 var moment = require('moment');
-var KueScheduler = require(path.join(__dirname, '..', '..', 'index'));
+var kue = require(path.join(__dirname, '..', '..', 'index'));
 var faker = require('faker');
+var Queue;
 
-describe('KueScheduler#schedule', function() {
-    var kueScheduler;
-    var scheduleQueue;
+describe('Queue#schedule', function() {
 
     before(function(done) {
-        kueScheduler = new KueScheduler();
-        scheduleQueue = kue.createQueue();
+        Queue = kue.createQueue();
         done();
     });
 
     after(function(done) {
-        scheduleQueue.shutdown(done);
+        Queue.shutdown(done);
     });
 
     it('should be a function', function(done) {
-        expect(kueScheduler.schedule).to.be.a('function');
+        expect(Queue.schedule).to.be.a('function');
         done();
     });
 
     it('should be able to parse date.js valid string', function(done) {
         var tenMinutesFromNow = moment().add(10, 'minutes').toDate();
-        kueScheduler
+        Queue
             ._parse('10 minutes from now', function(error, date) {
                 expect(date.getMinutes()).to.eql(tenMinutesFromNow.getMinutes());
                 done(error, date);
@@ -46,7 +44,7 @@ describe('KueScheduler#schedule', function() {
             type: 'fixed'
         };
 
-        scheduleQueue.process('schedule', function(job, finalize) {
+        Queue.process('schedule', function(job, finalize) {
             /*jshint camelcase:false */
             expect(job.id).to.exist;
             expect(job.type).to.equal('schedule');
@@ -61,9 +59,9 @@ describe('KueScheduler#schedule', function() {
             finalize();
         });
 
-        scheduleQueue.promote(3000);
+        Queue.promote(3000);
 
-        kueScheduler.schedule(
+        Queue.schedule(
             '2 seconds from now', {
                 type: 'schedule',
                 priority: 'normal',

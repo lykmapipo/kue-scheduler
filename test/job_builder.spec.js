@@ -3,23 +3,24 @@
 //dependencies
 var expect = require('chai').expect;
 var path = require('path');
-var KueScheduler = require(path.join(__dirname, '..', 'index'));
 var faker = require('faker');
+var kue = require(path.join(__dirname, '..', 'index'));
+var Queue;
 
-describe('KueScheduler#JobBuilder', function() {
-    var kueScheduler;
+describe('Queue JobBuilder', function() {
+
     before(function(done) {
-        kueScheduler = new KueScheduler();
+        Queue = kue.createQueue();
         done();
     });
 
     it('should be a function', function(done) {
-        expect(kueScheduler._buildJob).to.be.a('function');
+        expect(Queue._buildJob).to.be.a('function');
         done();
     });
 
     it('should throw `Invalid job definition` if no job definiton provided', function(done) {
-        kueScheduler
+        Queue
             ._buildJob('a', function(error, job) {
                 expect(error.message).to.equal('Invalid job definition');
                 done(null, job);
@@ -27,7 +28,7 @@ describe('KueScheduler#JobBuilder', function() {
     });
 
     it('should throw `Missing job type or data` if no job type provided', function(done) {
-        kueScheduler
+        Queue
             ._buildJob({
                 data: {
                     to: faker.internet.email()
@@ -39,7 +40,7 @@ describe('KueScheduler#JobBuilder', function() {
     });
 
     it('should throw `Missing job type or data` if no job data provided', function(done) {
-        kueScheduler
+        Queue
             ._buildJob({
                 type: 'mail'
             }, function(error, job) {
@@ -58,7 +59,7 @@ describe('KueScheduler#JobBuilder', function() {
             type: 'fixed'
         };
 
-        kueScheduler
+        Queue
             ._buildJob({
                 type: 'email',
                 priority: 'normal',

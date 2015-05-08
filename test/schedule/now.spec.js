@@ -3,26 +3,23 @@
 //dependencies
 var expect = require('chai').expect;
 var path = require('path');
-var kue = require('kue');
-var KueScheduler = require(path.join(__dirname, '..', '..', 'index'));
+var kue = require(path.join(__dirname, '..', '..', 'index'));
 var faker = require('faker');
+var Queue;
 
-describe('KueScheduler#now', function() {
-    var kueScheduler;
-    var nowQueue;
+describe('Queue#now', function() {
 
     before(function(done) {
-        kueScheduler = new KueScheduler();
-        nowQueue = kue.createQueue();
+        Queue = kue.createQueue();
         done();
     });
 
     after(function(done) {
-        nowQueue.shutdown(done);
+        Queue.shutdown(done);
     });
 
     it('should be a function', function(done) {
-        expect(kueScheduler.now).to.be.a('function');
+        expect(Queue.now).to.be.a('function');
         done();
     });
 
@@ -36,7 +33,7 @@ describe('KueScheduler#now', function() {
             type: 'fixed'
         };
 
-        nowQueue.process('now', function(job, finalize) {
+        Queue.process('now', function(job, finalize) {
             /*jshint camelcase:false */
             expect(job.id).to.exist;
             expect(job.type).to.equal('now');
@@ -54,7 +51,7 @@ describe('KueScheduler#now', function() {
         });
 
 
-        kueScheduler.now({
+        Queue.now({
             type: 'now',
             priority: 'normal',
             attempts: 3,
