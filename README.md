@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/lykmapipo/kue-scheduler.svg?branch=master)](https://travis-ci.org/lykmapipo/kue-scheduler)
 
-A job scheduler for Kue
+A job scheduler for [kue](https://github.com/Automattic/kue) backed by [redis](http://redis.io), built for [node.js](http://nodejs.org)
 
 ## Requirements
 - Redis 2.8.0 or higher.

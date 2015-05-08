@@ -1,7 +1,7 @@
 {
     "name": "kue-scheduler",
     "version": "0.1.0",
-    "description": "A job scheduler for kue",
+    "description": "A job scheduler for kue backed by redis, built for node.js",
     "main": "index.js",
     "scripts": {
         "test": "grunt test"
