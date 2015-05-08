@@ -123,10 +123,13 @@ Queue.prototype._subscribe = function() {
 
                             self.scheduler.set(jobExpiryKey, '', 'PX', delay, next);
                         },
-                        //create kue NOW job
-                        function(response, next) {
-                            self.now(jobDefinition, next);
+                        function buildJob(response, next) {
+                            self._buildJob(jobDefinition, next);
                         },
+                        //create kue NOW job
+                        function(job, next) {
+                            self.now(job, next);
+                        }
                         //TODO use event emitter to emit any error
                     ], noop);
         });
