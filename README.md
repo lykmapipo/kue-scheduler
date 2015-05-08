@@ -23,24 +23,28 @@ Require `kue-scheduler` after `kue` to be able to schedule jobs.
 var kue = require('kue');
 require('kue-scheduler')
 
-//or just simply
+Or just simply
+```js
 var kue = require('kue-scheduler');
 ```
 
-Schedule a job to run every `two seconds`
+Then continue with `jobs` scheduling
+
+- Schedule a job to run every `two seconds`
 ```js
 var kue = require('kue-scheduler');
 var Queue = kue.createQueue();
 
-//schedule a job
-Queue
-    .every('4 seconds', {
-        type: 'every',
-        priority: 'normal',
-        attempts: 3,
-        backoff: backoff,
-        data: data
-    });
+//create a job instance
+var job = Queue
+            .createJob('every', data)
+            .attempts(3)
+            .backoff(backoff)
+            .priority('normal');
+
+//schedule it to run every 4 seconds
+Queue.every('2 seconds', job);
+
 
 //somewhere process your scheduled jobs
 Queue.process('every', function(job, finalize) {
