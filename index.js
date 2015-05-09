@@ -14,13 +14,10 @@ var kue = require('kue');
 var Job = kue.Job;
 var Queue = kue;
 //
-//use kue redis factories
+//make use kue redis factories
+//for establishing redis connections
 //
 var redis = kue.redis;
-//
-//or import redis from kue
-//node_modules/kue/node_modules/redis
-//
 var _ = require('lodash');
 var async = require('async');
 var datejs = require('date.js');
@@ -109,6 +106,8 @@ Queue.prototype._readJobData = function(jobDataKey, done) {
  * @private
  */
 Queue.prototype._parse = function(str, done) {
+    //this refer to kue Queue instance context
+
     try {
         var date = datejs(str);
         return done(null, date);
@@ -578,8 +577,11 @@ Queue.prototype.now = function(job) {
 
 
 //patch Queue shutdown to allow
-//fo scheduler resource cleanups
+//for scheduler resource cleanups
+//
 var shutdown = Queue.prototype.shutdown;
+//
+//
 /**
  * Graceful shutdown
  *
@@ -588,6 +590,8 @@ var shutdown = Queue.prototype.shutdown;
  * @api public
  */
 Queue.prototype.shutdown = function( /*fn, timeout, type*/ ) {
+    //this refer to kue Queue instance context
+
     //unsubscribe to key expiry events
     this._listener.unsubscribe('__keyevent@0__:expired');
 
@@ -629,6 +633,7 @@ kue.createQueue = function(options) {
     //and schedule kue jobs to run
     queue._subscribe();
 
+    //return patched queue
     return queue;
 };
 

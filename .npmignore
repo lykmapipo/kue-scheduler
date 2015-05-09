@@ -4,3 +4,4 @@ examples
 .tmp
 *.log
 *.pid
+.travis.yml
