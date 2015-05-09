@@ -5,3 +5,4 @@ examples
 *.log
 *.pid
 .travis.yml
+Gruntfile.js
