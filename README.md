@@ -4,9 +4,7 @@
 
 A job scheduler for [kue](https://github.com/Automattic/kue), backed by [redis](http://redis.io) and built for [node.js](http://nodejs.org)
 
-Scheduling API heavily inspired and borrowed from [agenda](https://github.com/rschmukler/agenda) and others.
-
-*Examples: Can be found in `example directory` of this repo and will be updated base on issue(s) and need(s) on `how to` achieve scheduling with `kue-scheduler`*
+Scheduling API is heavily inspired and borrowed from [agenda](https://github.com/rschmukler/agenda) and others.
 
 
 ## Requirements
@@ -43,7 +41,7 @@ var job = Queue
             .backoff(backoff)
             .priority('normal');
 
-//schedule it to run every 4 seconds
+//schedule it to run every 2 seconds
 Queue.every('2 seconds', job);
 
 
@@ -106,7 +104,7 @@ Queue.process('now', function(job, done) {
 ### every(interval, job)
 Runs a given `job instance` every after a given `interval`.
 
-`interval` can be a human-readable format `String` or a cron format `String`.
+`interval` can either be a [human-readable interval format](https://github.com/rschmukler/human-interval) `String` or a [cron format](https://github.com/ncb000gt/node-cron) `String`.
 
 ```js
 var kue = require('kue-scheduler');
@@ -119,7 +117,7 @@ var job = Queue
             .backoff(backoff)
             .priority('normal');
 
-//schedule it to run every 4 seconds
+//schedule it to run every 2 seconds
 Queue.every('2 seconds', job);
 
 
@@ -132,7 +130,7 @@ Queue.process('every', function(job, done) {
 
 
 ### schedule(when, job)
-Schedules a given `job instance` to run once at a given time. `when` can be a `Date` or a `date.js String` such as `tomorrow at 5pm`.
+Schedules a given `job instance` to run once at a given time. `when` can either be a `Date instance` or a `[date.js String](https://github.com/matthewmueller/date)` such as `tomorrow at 5pm`.
 
 ```js
 var kue = require('kue-scheduler');
@@ -181,10 +179,10 @@ Queue.process('now', function(job, done) {
 ```
 
 ## Events
-Currently the only way to interact with `kue-scheduler` is through its events. `kue-scheduler` fire the `schedule error` and `schedule success` events.
+Currently the only way to interact with `kue-scheduler` is through its events. `kue-scheduler` fires `schedule error` and `schedule success` events.
 
 ### `schedule error`
-Use it to interact with `kue-scheduler` to get notified when error occur.
+Use it to interact with `kue-scheduler` to get notified when an error occur.
 
 ```js
 //listen on success scheduling
