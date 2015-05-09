@@ -2,9 +2,11 @@
 
 [![Build Status](https://travis-ci.org/lykmapipo/kue-scheduler.svg?branch=master)](https://travis-ci.org/lykmapipo/kue-scheduler)
 
-A job scheduler for [kue](https://github.com/Automattic/kue) backed by [redis](http://redis.io), built for [node.js](http://nodejs.org)
+A job scheduler for [kue](https://github.com/Automattic/kue), backed by [redis](http://redis.io) and built for [node.js](http://nodejs.org)
 
 Scheduling API heavily inspired and borrowed from [agenda](https://github.com/rschmukler/agenda) and others.
+
+*Examples: Can be found in `example directory` of this repo and will be updated base on issue(s) and need(s) on `how to` achieve scheduling with `kue-scheduler`*
 
 
 ## Requirements
