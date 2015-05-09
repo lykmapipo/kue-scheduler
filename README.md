@@ -104,7 +104,7 @@ Queue.process('now', function(job, done) {
 ### every(interval, job)
 Runs a given `job instance` every after a given `interval`.
 
-`interval` can either be a [human-readable interval format](https://github.com/rschmukler/human-interval) `String` or a [cron format](https://github.com/ncb000gt/node-cron) `String`.
+`interval` can either be a [human-interval](https://github.com/rschmukler/human-interval) `String` format or a [cron](https://github.com/ncb000gt/node-cron) `String` format.
 
 ```js
 var kue = require('kue-scheduler');
@@ -130,7 +130,7 @@ Queue.process('every', function(job, done) {
 
 
 ### schedule(when, job)
-Schedules a given `job instance` to run once at a given time. `when` can either be a `Date instance` or a [date.js String](https://github.com/matthewmueller/date) `String` such as `tomorrow at 5pm`.
+Schedules a given `job instance` to run once at a given time. `when` can either be a `Date instance` or a [date.js](https://github.com/matthewmueller/date) `String` such as `tomorrow at 5pm`.
 
 ```js
 var kue = require('kue-scheduler');
