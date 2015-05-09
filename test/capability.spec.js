@@ -17,6 +17,11 @@ describe('Queue Scheduling Capabilities', function() {
         done();
     });
 
+    after(function(done) {
+        Queue.shutdown(done);
+    });
+
+
     it('should be able to shedule job in later time', function(done) {
         expect(Queue).to.respondTo('schedule');
         done();

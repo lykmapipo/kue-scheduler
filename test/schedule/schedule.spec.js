@@ -59,6 +59,23 @@ describe('Queue#schedule', function() {
             finalize();
         });
 
+        //listen on success scheduling
+        Queue.on('schedule success', function(job) {
+            if (job.type === 'schedule') {
+
+                /*jshint camelcase:false */
+                expect(job.id).to.exist;
+                expect(job.type).to.equal('schedule');
+                expect(parseInt(job._max_attempts)).to.equal(3);
+                expect(job.data.to).to.equal(data.to);
+                expect(job.data.schedule).to.equal('ONCE');
+
+                expect(job._backoff).to.eql(backoff);
+                expect(parseInt(job._priority)).to.equal(0);
+                /*jshint camelcase:true */
+            }
+        });
+
         Queue.promote(3000);
 
         var job = Queue
@@ -67,25 +84,7 @@ describe('Queue#schedule', function() {
             .backoff(backoff)
             .priority('normal');
 
-        Queue.schedule(
-            '2 seconds from now',
-            job,
-            function(error, job) {
-                if (error) {
-                    done(error);
-                } else {
-                    /*jshint camelcase:false */
-                    expect(job.id).to.exist;
-                    expect(job.type).to.equal('schedule');
-                    expect(parseInt(job._max_attempts)).to.equal(3);
-                    expect(job.data.to).to.equal(data.to);
-                    expect(job.data.schedule).to.equal('ONCE');
-
-                    expect(job._backoff).to.eql(backoff);
-                    expect(parseInt(job._priority)).to.equal(0);
-                    /*jshint camelcase:true */
-                }
-            });
+        Queue.schedule('2 seconds from now', job);
 
 
         setTimeout(function() {

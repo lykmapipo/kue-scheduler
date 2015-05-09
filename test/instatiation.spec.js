@@ -14,13 +14,17 @@ describe('Queue Job Scheduler & Listener', function() {
         done();
     });
 
+    after(function(done) {
+        Queue.shutdown(done);
+    });
+
     it('should be able to instantiate scheduler redis client', function(done) {
-        expect(Queue.scheduler).to.exist;
+        expect(Queue._scheduler).to.exist;
         done();
     });
 
     it('should be able to instantiate expiry key listener', function(done) {
-        expect(Queue.listener).to.exist;
+        expect(Queue._listener).to.exist;
         done();
     });
 });

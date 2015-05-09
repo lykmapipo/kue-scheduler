@@ -3,6 +3,6 @@ node_js:
   - "0.10"
 before_script:
   - npm install -g grunt-cli
-  - redis-cli config set notify-keyspace-events KEAxe
+  - redis-cli config set notify-keyspace-events Ex
 services:
   - redis-server

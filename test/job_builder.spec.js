@@ -14,6 +14,11 @@ describe('Queue JobBuilder', function() {
         done();
     });
 
+    after(function(done) {
+        Queue.shutdown(done);
+    });
+
+
     it('should be a function', function(done) {
         expect(Queue._buildJob).to.be.a('function');
         done();

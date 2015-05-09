@@ -33,8 +33,11 @@ describe('Queue#every', function() {
             delay: 60000,
             type: 'fixed'
         };
+        var runCount = 0;
 
         Queue.process('every', function(job, finalize) {
+            //increament run counts
+            runCount++;
 
             /*jshint camelcase:false */
             expect(job.id).to.exist;
@@ -50,18 +53,35 @@ describe('Queue#every', function() {
             finalize();
         });
 
+        //listen on success scheduling
+        Queue.on('schedule success', function(job) {
+            if (job.type === 'every') {
+                /*jshint camelcase:false */
+                expect(job.id).to.exist;
+                expect(job.type).to.equal('every');
+                expect(parseInt(job._max_attempts)).to.equal(3);
+                expect(job.data.to).to.equal(data.to);
+                expect(job.data.schedule).to.equal('RECCUR');
+
+                expect(job._backoff).to.eql(backoff);
+                expect(parseInt(job._priority)).to.equal(0);
+                /*jshint camelcase:true */
+            }
+        });
+
         var job = Queue
             .createJob('every', data)
             .attempts(3)
             .backoff(backoff)
             .priority('normal');
 
-        Queue.every('4 seconds', job);
+        Queue.every('2 seconds', job);
 
         //wait for two jobs to be runned
         setTimeout(function() {
+            expect(runCount).to.equal(2);
             done();
-        }, 10000);
+        }, 6000);
     });
 
 });

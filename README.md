@@ -9,7 +9,7 @@ A job scheduler for [kue](https://github.com/Automattic/kue) backed by [redis](h
 
 - Enabling keyspace notification using `redis-cli`
 ```sh
-$ redis-cli config set notify-keyspace-events KEAxe
+$ redis-cli config set notify-keyspace-events Ex
 ```
 
 ## Installation
@@ -18,15 +18,11 @@ $ npm install kue-scheduler
 ```
 
 ## Usage
-Require `kue-scheduler` after `kue` to be able to schedule jobs.
-```js
-var kue = require('kue');
-require('kue-scheduler')
-
-Or just simply
+- Require `kue-scheduler` to be able to schedule jobs.
 ```js
 var kue = require('kue-scheduler');
 ```
+*Note:exported value of `kue-scheduler` is a valid kue*
 
 Then continue with `jobs` scheduling
 
@@ -47,8 +43,9 @@ Queue.every('2 seconds', job);
 
 
 //somewhere process your scheduled jobs
-Queue.process('every', function(job, finalize) {
+Queue.process('every', function(job, done) {
     ...
+    done();
 });
 ```
 

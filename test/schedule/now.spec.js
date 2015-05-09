@@ -52,28 +52,28 @@ describe('Queue#now', function() {
             done();
         });
 
+        //listen on success scheduling
+        Queue.on('schedule success', function(job) {
+            if (job.type === 'now') {
+                /*jshint camelcase:false */
+                expect(job.id).to.exist;
+                expect(job.type).to.equal('now');
+                expect(parseInt(job._max_attempts)).to.equal(3);
+                expect(job.data.to).to.equal(data.to);
+                expect(job.data.schedule).to.equal('NOW');
+
+                expect(job._backoff).to.eql(backoff);
+                expect(parseInt(job._priority)).to.equal(0);
+                /*jshint camelcase:true */
+            }
+        });
+
         var job = Queue
             .createJob('now', data)
             .attempts(3)
             .backoff(backoff)
             .priority('normal');
 
-        Queue.now(job, function(error, job) {
-            if (error) {
-                done(error);
-            }
-
-            /*jshint camelcase:false */
-            expect(job.id).to.exist;
-            expect(job.type).to.equal('now');
-            expect(parseInt(job._max_attempts)).to.equal(3);
-            expect(job.data.to).to.equal(data.to);
-            expect(job.data.schedule).to.equal('NOW');
-
-            expect(job._backoff).to.eql(backoff);
-            expect(parseInt(job._priority)).to.equal(0);
-            /*jshint camelcase:true */
-
-        });
+        Queue.now(job);
     });
 });
