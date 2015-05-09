@@ -23,7 +23,7 @@ $ npm install kue-scheduler
 ```
 
 ## Usage
-- Require `kue-scheduler` to be able to schedule jobs.
+Require `kue-scheduler` to be able to schedule jobs.
 ```js
 var kue = require('kue-scheduler');
 ```
@@ -31,7 +31,7 @@ var kue = require('kue-scheduler');
 
 Then continue with `jobs` scheduling
 
-- Schedule a job to run every `two seconds`
+### Schedule a job to run every `two seconds`
 ```js
 var kue = require('kue-scheduler');
 var Queue = kue.createQueue();
@@ -54,7 +54,7 @@ Queue.process('every', function(job, done) {
 });
 ```
 
-- Schedule a job to run once '2 seconds from now'
+### Schedule a job to run once '2 seconds from now'
 ```js
 var kue = require('kue-scheduler');
 var Queue = kue.createQueue();
@@ -78,7 +78,7 @@ Queue.process('shedule', function(job, done) {
 ```
 
 
-- Schedule a job to run now
+### Schedule a job to run now
 ```js
 var kue = require('kue-scheduler');
 var Queue = kue.createQueue();
