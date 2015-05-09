@@ -49,6 +49,152 @@ Queue.process('every', function(job, done) {
 });
 ```
 
+- Schedule a job to run once '2 seconds from now'
+```js
+var kue = require('kue-scheduler');
+var Queue = kue.createQueue();
+
+//create a job instance
+var job = Queue
+            .createJob('schedule', data)
+            .attempts(3)
+            .backoff(backoff)
+            .priority('normal');
+
+//schedule it to run once 2 seconds from now
+Queue.schedule('2 seconds from now', job);
+
+
+//somewhere process your scheduled jobs
+Queue.process('shedule', function(job, done) {
+    ...
+    done();
+});
+```
+
+
+- Schedule a job to run now
+```js
+var kue = require('kue-scheduler');
+var Queue = kue.createQueue();
+
+//create a job instance
+var job = Queue
+            .createJob('now', data)
+            .attempts(3)
+            .backoff(backoff)
+            .priority('normal');
+
+//schedule it to run now
+Queue.now(job);
+
+
+//somewhere process your scheduled jobs
+Queue.process('now', function(job, done) {
+    ...
+    done();
+});
+```
+
+## API
+
+### every(interval, job)
+Runs a given `job instance` every after a given `interval`.
+
+`interval` can be a human-readable format `String` or a cron format `String`.
+
+```js
+var kue = require('kue-scheduler');
+var Queue = kue.createQueue();
+
+//create a job instance
+var job = Queue
+            .createJob('every', data)
+            .attempts(3)
+            .backoff(backoff)
+            .priority('normal');
+
+//schedule it to run every 4 seconds
+Queue.every('2 seconds', job);
+
+
+//somewhere process your scheduled jobs
+Queue.process('every', function(job, done) {
+    ...
+    done();
+});
+```
+
+
+### schedule(when, job)
+Schedules a given `job instance` to run once at a given time. `when` can be a `Date` or a `date.js String` such as `tomorrow at 5pm`.
+
+```js
+var kue = require('kue-scheduler');
+var Queue = kue.createQueue();
+
+//create a job instance
+var job = Queue
+            .createJob('schedule', data)
+            .attempts(3)
+            .backoff(backoff)
+            .priority('normal');
+
+//schedule it to run once 2 seconds from now
+Queue.schedule('2 seconds from now', job);
+
+
+//somewhere process your scheduled jobs
+Queue.process('shedule', function(job, done) {
+    ...
+    done();
+});
+```
+
+### now(job)
+Schedules a given `job instance` to run once immediately.
+
+```js
+var kue = require('kue-scheduler');
+var Queue = kue.createQueue();
+
+//create a job instance
+var job = Queue
+            .createJob('now', data)
+            .attempts(3)
+            .backoff(backoff)
+            .priority('normal');
+
+//schedule it to run now
+Queue.now(job);
+
+//somewhere process your scheduled jobs
+Queue.process('now', function(job, done) {
+    ...
+    done();
+});
+```
+
+## Events
+
+
+## Testing
+* Clone this repository
+
+* Install all development dependencies
+```sh
+$ npm install
+```
+
+* Then run test
+```sh
+$ npm test
+```
+
+## Contribute
+It will be nice, if you open an issue first so that we can know what is going on, then, fork this repo and push in your ideas. Do not forget to add a bit of test(s) of what value you adding.
+
+
 ## License 
 
 (The MIT License)
