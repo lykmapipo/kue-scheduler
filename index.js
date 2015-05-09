@@ -85,6 +85,7 @@ Queue.prototype._readJobData = function(jobDataKey, done) {
         });
 };
 
+
 /**
  * @function
  * @description subscribe to key expiry events
@@ -99,6 +100,8 @@ Queue.prototype._subscribe = function() {
         .listener
         .on('message', function(channel, jobExpiryKey) {
             var jobDefinition;
+
+            console.log(channel);
 
             async
                 .waterfall(
@@ -118,8 +121,14 @@ Queue.prototype._subscribe = function() {
                         },
                         //resave the key to rerun this job again
                         function(nextRunTime, next) {
+                            //update lastRun job data
+                            jobDefinition.lastRun = nextRunTime;
+
+                            //compute delay
                             var now = new Date();
                             var delay = nextRunTime.getTime() - now.getTime();
+
+                            // self._saveJobData(jobExpiryKey, jobDefinition, noop);
 
                             self.scheduler.set(jobExpiryKey, '', 'PX', delay, next);
                         },
@@ -127,7 +136,8 @@ Queue.prototype._subscribe = function() {
                             self._buildJob(jobDefinition, next);
                         },
                         //create kue NOW job
-                        function(job, next) {
+                        function(job, validations, next) {
+                            //TODO use event emitter to emit any validation error
                             self.now(job, next);
                         }
                         //TODO use event emitter to emit any error
@@ -158,7 +168,8 @@ Queue.prototype._computeNextRunTime = function(jobData, done) {
             cron: function(after) {
                 try {
                     //last run of the job is now
-                    var lastRun = jobData.lastRun || new Date();
+                    var lastRun =
+                        jobData.lastRun ? new Date(jobData.lastRun) : new Date();
 
                     //compute next date from the cron interval
                     var cronTime = new CronTime(interval);
@@ -184,7 +195,8 @@ Queue.prototype._computeNextRunTime = function(jobData, done) {
             human: function(after) {
                 try {
                     //last run of the job is now
-                    var lastRun = jobData.lastRun || new Date();
+                    var lastRun =
+                        jobData.lastRun ? new Date(jobData.lastRun) : new Date();
 
                     var nextRun =
                         new Date(lastRun.valueOf() + humanInterval(interval));
@@ -213,6 +225,7 @@ Queue.prototype._computeNextRunTime = function(jobData, done) {
         });
 };
 
+
 /**
  * @function
  * @description schedule a job to run every after a specified interval
@@ -236,7 +249,8 @@ Queue.prototype.every = function(interval, job) {
         reccurInterval: interval,
         data: {
             schedule: 'RECCUR'
-        }
+        },
+        backoff: job._backoff
     });
 
     //generate job uuid
@@ -263,8 +277,11 @@ Queue.prototype.every = function(interval, job) {
 
             //save key an wait for it to expiry
             self.scheduler.set(results.jobExpiryKey, '', 'PX', delay, noop);
+
         });
+
 };
+
 
 /**
  * @function
@@ -380,6 +397,7 @@ Queue.prototype.now = function(job, done) {
 Queue.prototype._buildJob = function(jobDefinition, done) {
     //this refer to kue Queue instance context
     var self = this;
+
 
     async
         .parallel({

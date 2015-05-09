@@ -35,6 +35,7 @@ describe('Queue#every', function() {
         };
 
         Queue.process('every', function(job, finalize) {
+
             /*jshint camelcase:false */
             expect(job.id).to.exist;
             expect(job.type).to.equal('every');
@@ -55,8 +56,7 @@ describe('Queue#every', function() {
             .backoff(backoff)
             .priority('normal');
 
-        Queue
-            .every('4 seconds', job);
+        Queue.every('4 seconds', job);
 
         //wait for two jobs to be runned
         setTimeout(function() {
