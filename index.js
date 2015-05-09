@@ -101,8 +101,6 @@ Queue.prototype._subscribe = function() {
         .on('message', function(channel, jobExpiryKey) {
             var jobDefinition;
 
-            console.log(channel);
-
             async
                 .waterfall(
                     [
