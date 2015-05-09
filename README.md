@@ -130,7 +130,7 @@ Queue.process('every', function(job, done) {
 
 
 ### schedule(when, job)
-Schedules a given `job instance` to run once at a given time. `when` can either be a `Date instance` or a `[date.js String](https://github.com/matthewmueller/date)` such as `tomorrow at 5pm`.
+Schedules a given `job instance` to run once at a given time. `when` can either be a `Date instance` or a [date.js String](https://github.com/matthewmueller/date) `String` such as `tomorrow at 5pm`.
 
 ```js
 var kue = require('kue-scheduler');
@@ -185,7 +185,7 @@ Currently the only way to interact with `kue-scheduler` is through its events. `
 Use it to interact with `kue-scheduler` to get notified when an error occur.
 
 ```js
-//listen on success scheduling
+//listen on scheduler errors
 Queue.on('schedule error', function(error) {
     ...
 });
