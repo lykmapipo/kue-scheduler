@@ -1,8 +1,11 @@
-# kue-scheduler (WIP)
+# kue-scheduler
 
 [![Build Status](https://travis-ci.org/lykmapipo/kue-scheduler.svg?branch=master)](https://travis-ci.org/lykmapipo/kue-scheduler)
 
 A job scheduler for [kue](https://github.com/Automattic/kue) backed by [redis](http://redis.io), built for [node.js](http://nodejs.org)
+
+Scheduling API heavily inspired and borrowed from [agenda](https://github.com/rschmukler/agenda) and others.
+
 
 ## Requirements
 - Redis 2.8.0 or higher.
@@ -176,6 +179,45 @@ Queue.process('now', function(job, done) {
 ```
 
 ## Events
+Currently the only way to interact with `kue-scheduler` is through its events. `kue-scheduler` fire the `schedule error` and `schedule success` events.
+
+### `schedule error`
+Use it to interact with `kue-scheduler` to get notified when error occur.
+
+```js
+//listen on success scheduling
+Queue.on('schedule error', function(error) {
+    ...
+});
+
+var job = Queue
+    .createJob('now', data)
+    .attempts(3)
+    .backoff(backoff)
+    .priority('normal');
+
+Queue.now(job);
+```
+
+### `schedule success`
+Use it to interact with `kue-scheduler` to obtained instance of current scheduled job. 
+
+*Note: Use this event to attach instance level job events* 
+
+```js
+//listen on success scheduling
+Queue.on('schedule success', function(job) {
+    ...
+});
+
+var job = Queue
+    .createJob('now', data)
+    .attempts(3)
+    .backoff(backoff)
+    .priority('normal');
+
+Queue.now(job);
+```
 
 
 ## Testing
