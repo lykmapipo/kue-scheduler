@@ -1,6 +1,6 @@
 {
     "name": "kue-scheduler",
-    "version": "0.1.1",
+    "version": "0.2.0",
     "description": "A job scheduler utility for kue, backed by redis and built for node.js",
     "main": "index.js",
     "scripts": {
