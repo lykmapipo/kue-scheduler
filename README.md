@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/lykmapipo/kue-scheduler.svg?branch=master)](https://travis-ci.org/lykmapipo/kue-scheduler)
 
-A job scheduler for [kue](https://github.com/Automattic/kue), backed by [redis](http://redis.io) and built for [node.js](http://nodejs.org)
+A job scheduler utility for [kue](https://github.com/Automattic/kue), backed by [redis](http://redis.io) and built for [node.js](http://nodejs.org)
 
 Scheduling API is heavily inspired and borrowed from [agenda](https://github.com/rschmukler/agenda) and others.
 
@@ -105,6 +105,7 @@ Queue.process('now', function(job, done) {
 
 ### `enableExpiryNotifications()`
 Allow to configure `redis key expiry notifications`.
+
 Example
 ```js
 var kue = require('kue-scheduler');
