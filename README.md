@@ -14,7 +14,7 @@ Scheduling API is heavily inspired and borrowed from [agenda](https://github.com
 ```sh
 $ redis-cli config set notify-keyspace-events Ex
 ```
-*Note: This is can be done programmatic now. See [enableExpiryNotifications]()*
+*Note: This is can be done programmatic now. See [enableExpiryNotifications](#enableexpirynotifications)*
 
 
 ## Installation
@@ -114,7 +114,7 @@ var Queue = kue.createQueue();
 Queue.enableExpiryNotifications();
 ```
 
-### every(interval, job)
+### `every(interval, job)`
 Runs a given `job instance` every after a given `interval`.
 
 `interval` can either be a [human-interval](https://github.com/rschmukler/human-interval) `String` format or a [cron](https://github.com/ncb000gt/node-cron) `String` format.
@@ -142,7 +142,7 @@ Queue.process('every', function(job, done) {
 ```
 
 
-### schedule(when, job)
+### `schedule(when, job)`
 Schedules a given `job instance` to run once at a given time. `when` can either be a `Date instance` or a [date.js](https://github.com/matthewmueller/date) `String` such as `tomorrow at 5pm`.
 
 ```js
@@ -167,7 +167,7 @@ Queue.process('shedule', function(job, done) {
 });
 ```
 
-### now(job)
+### `now(job)`
 Schedules a given `job instance` to run once immediately.
 
 ```js
@@ -249,9 +249,11 @@ $ npm test
 ## Contribute
 It will be nice, if you open an issue first so that we can know what is going on, then, fork this repo and push in your ideas. Do not forget to add a bit of test(s) of what value you adding.
 
+
 ## TODO
 - [ ] Graceful shutdown
 - [ ] Scheduler restart after shutdown
+
 
 ## License 
 
