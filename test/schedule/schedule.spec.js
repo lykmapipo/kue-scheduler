@@ -76,7 +76,10 @@ describe('Queue#schedule', function() {
             }
         });
 
-        Queue.promote(3000);
+        /**
+         * @deprecated
+         */
+        // Queue.promote(3000);
 
         var job = Queue
             .createJob('schedule', data)
