@@ -14,7 +14,7 @@ Scheduling API is heavily inspired and borrowed from [agenda](https://github.com
 ```sh
 $ redis-cli config set notify-keyspace-events Ex
 ```
-*Note: This is can be done programmatic now. See [enableExpiryNotifications](#enableexpirynotifications)*
+*Note: This is can be done programmatic now, using [enableExpiryNotifications](#enableexpirynotifications) if you have permissions*
 
 
 ## Installation
@@ -23,18 +23,18 @@ $ npm install kue-scheduler
 ```
 
 ## Usage
-Require `kue-scheduler` to be able to schedule jobs.
-```js
-var kue = require('kue-scheduler');
-```
-*Note:exported value of `kue-scheduler` is a valid kue*
 
-Then continue with `jobs` scheduling
 
-### Schedule a job to run every `two seconds`
+### Schedule a job to run every after specified time interval
+
+Example `schedule a job to run every two seconds from now`
 ```js
 var kue = require('kue-scheduler');
 var Queue = kue.createQueue();
+
+//Enable key expiry notifications
+//if not yet done through redis-clis
+Queue.enableExpiryNotifications();
 
 //create a job instance
 var job = Queue
@@ -54,7 +54,9 @@ Queue.process('every', function(job, done) {
 });
 ```
 
-### Schedule a job to run once '2 seconds from now'
+### Schedule a job to run only once after specified interval elapsed
+
+Example `schedule a job to run only once two seconds from now`
 ```js
 var kue = require('kue-scheduler');
 var Queue = kue.createQueue();
@@ -104,7 +106,7 @@ Queue.process('now', function(job, done) {
 ## API
 
 ### `enableExpiryNotifications()`
-Allow to configure `redis key expiry notifications`.
+Enable `redis key expiry notifications`.
 
 Example
 ```js
@@ -123,6 +125,10 @@ Runs a given `job instance` every after a given `interval`.
 ```js
 var kue = require('kue-scheduler');
 var Queue = kue.createQueue();
+
+//Enable key expiry notifications
+//if not yet done through redis-clis
+Queue.enableExpiryNotifications();
 
 //create a job instance
 var job = Queue
