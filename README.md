@@ -239,6 +239,7 @@ It will be nice, if you open an issue first so that we can know what is going on
 ## TODO
 - [ ] Graceful shutdown
 - [ ] Scheduler restart after shutdown
+- [ ] Enable programmatic `redis` keyspace notifications
 
 
 ## License 
