@@ -14,6 +14,8 @@ Scheduling API is heavily inspired and borrowed from [agenda](https://github.com
 ```sh
 $ redis-cli config set notify-keyspace-events Ex
 ```
+*Note: This is can be done programmatic now. See [enableExpiryNotifications]()*
+
 
 ## Installation
 ```
@@ -100,6 +102,17 @@ Queue.process('now', function(job, done) {
 ```
 
 ## API
+
+### `enableExpiryNotifications()`
+Allow to configure `redis key expiry notifications`.
+Example
+```js
+var kue = require('kue-scheduler');
+var Queue = kue.createQueue();
+
+//enable expiry key notifications
+Queue.enableExpiryNotifications();
+```
 
 ### every(interval, job)
 Runs a given `job instance` every after a given `interval`.
@@ -239,8 +252,6 @@ It will be nice, if you open an issue first so that we can know what is going on
 ## TODO
 - [ ] Graceful shutdown
 - [ ] Scheduler restart after shutdown
-- [ ] Enable programmatic `redis` keyspace notifications
-
 
 ## License 
 

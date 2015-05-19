@@ -150,4 +150,21 @@ describe('Queue Scheduling Capabilities', function() {
 
     });
 
+    it('should be able to enable key expriration notifications', function(done) {
+        Queue.enableExpiryNotifications();
+
+        Queue
+            ._cli
+            .config('GET', 'notify-keyspace-events', function(error, results) {
+
+                expect(error).to.be.null;
+                expect(results).to.not.be.null;
+
+                expect(results[1].indexOf('E')).to.be.above(-1);
+                expect(results[1].indexOf('x')).to.be.above(-1);
+
+                done(error, results);
+            });
+    });
+
 });

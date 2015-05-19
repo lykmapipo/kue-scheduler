@@ -98,41 +98,17 @@ Queue.prototype._readJobData = function(jobDataKey, done) {
 
 
 /**
- * @description Enable redis keyspace notification for key that expire
- * @private
+ * @description Enable redis expiry keys notifications
+ * @public
  */
-Queue.prototype._enableKeyspaceNotifications = function() {
-    var self = this;
+Queue.prototype.enableExpiryNotifications = function() {
+    //this refer to Queue instance context
 
-    self
-        ._listener
-        .config('GET', 'notify-keyspace-events', function(err, data) {
-            //reference configurations
-            var config = '';
-
-            //grab existing keyspace notification configuration
-            //from redis
-            if (data) {
-                config = data[1];
-            }
-
-            //enable 
-            //Keyevent events, published with __keyevent@<db>__ prefix
-            if (config.indexOf('E') === -1) {
-                config += 'E';
-            }
-
-            //enable
-            //Expired events (events generated every time a key expires)
-            if (config.indexOf('x') === -1) {
-                config += 'x';
-            }
-
-            //set configurations
-            self
-                ._listener
-                .config('SET', 'notify-keyspace-events', config, function() {});
-        });
+    //enable 
+    //Keyevent events, published with __keyevent@<db>__ prefix
+    //
+    //Expired events (events generated every time a key expires)
+    this._cli.config('SET', 'notify-keyspace-events', 'Ex');
 };
 
 
@@ -634,9 +610,12 @@ Queue.prototype.shutdown = function( /*fn, timeout, type*/ ) {
     //unsubscribe to key expiry events
     this._listener.unsubscribe('__keyevent@0__:expired');
 
-    //close _scheduler and _lister redis connctions
+    //close _scheduler,
+    // _lister and
+    // _cli redis connctions
     this._listener.end();
     this._scheduler.end();
+    this._cli.end();
 
     //then call previous Queue shutdown
     shutdown.apply(this, arguments);
@@ -668,8 +647,8 @@ kue.createQueue = function(options) {
     //a redis client to listen for key expiry 
     queue._listener = redis.createClient();
 
-    //enable keyspace notifications
-    queue._enableKeyspaceNotifications();
+    //redis client to allow configurations commands
+    queue._cli = redis.createClient();
 
     //listen for job key expiry
     //and schedule kue jobs to run
