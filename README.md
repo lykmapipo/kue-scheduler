@@ -6,20 +6,23 @@ A job scheduler utility for [kue](https://github.com/Automattic/kue), backed by 
 
 Scheduling API is heavily inspired and borrowed from [agenda](https://github.com/rschmukler/agenda) and others.
 
+*Note!: expiry key notification are now enabled by default, if provided kue options has a permission to do so*
 
 ## Requirements
 - Redis 2.8.0 or higher.
 
-- Enabling keyspace notification using `redis-cli`
+- [kue 0.9.3+](https://github.com/Automattic/kue)
+
+- Enabling keyspace notification using `redis-cli`, if `kue-scheduler` implicit failed to enable 
 ```sh
 $ redis-cli config set notify-keyspace-events Ex
 ```
-*Note: This is can be done programmatic now, using [enableExpiryNotifications](#enableexpirynotifications) if you have permissions*
+*Note: This is can be done programmatic, using [enableExpiryNotifications](#enableexpirynotifications) if you have permissions.*
 
 
 ## Installation
 ```
-$ npm install kue-scheduler
+$ npm install --save async lodash kue kue-scheduler
 ```
 
 ## Usage
