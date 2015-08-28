@@ -25,6 +25,15 @@ var uuid = require('node-uuid');
 var humanInterval = require('human-interval');
 var CronTime = require('cron').CronTime;
 
+/**
+ * filter not related to kue messages
+ *
+ * @param jobExpKey
+ */
+function filterBazar(jobExpKey) {
+    return jobExpKey.match(new RegExp('^' + kue.singleton._options.prefix + ':'));
+}
+
 
 /**
  * @function
@@ -327,6 +336,10 @@ Queue.prototype._subscribe = function() {
     this
         ._listener
         .on('message', function(channel, jobExpiryKey) {
+
+            if (!filterBazar(jobExpiryKey)) {
+                return;
+            }
 
             async
             .waterfall(
