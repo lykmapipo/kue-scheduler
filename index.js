@@ -24,6 +24,7 @@ var datejs = require('date.js');
 var uuid = require('node-uuid');
 var humanInterval = require('human-interval');
 var CronTime = require('cron').CronTime;
+var redisFilter;
 
 /**
  * filter not related to kue messages
@@ -31,7 +32,7 @@ var CronTime = require('cron').CronTime;
  * @param jobExpKey
  */
 function filterBazar(jobExpKey) {
-    return jobExpKey.match(new RegExp('^' + kue.singleton._options.prefix + ':'));
+    return jobExpKey.match(redisFilter);
 }
 
 
@@ -650,6 +651,9 @@ kue.createQueue = function(options) {
 
     //store passed options into Queue
     Queue.prototype.options = options;
+
+    //fill redisFilter
+    redisFilter = new RegExp('^' + options.prefix + ':');
 
     //instatiare kue
     var queue = createQueue.call(kue, options);
