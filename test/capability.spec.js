@@ -38,6 +38,11 @@ describe('Queue Scheduling Capabilities', function() {
         done();
     });
 
+    it('should have job expiry key validator', function(done) {
+        expect(Queue._jobExpiryKeyValidator).to.exists;
+        done();
+    });
+
     it('should be able to generate job expriration key', function(done) {
         var jobuuid = uuid.v1();
 
