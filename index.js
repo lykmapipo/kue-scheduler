@@ -4,7 +4,7 @@
  * @module
  * @name kue-scheduler
  * @description A job scheduling utility for kue
- * @return {kue} a patched kue with job scheduling capability
+ * @return {kue} a patched kue with job scheduling capabilities
  * @public
  */
 
@@ -47,8 +47,7 @@ Queue.prototype._getJobExpiryKey = function(uuid) {
  */
 Queue.prototype._isJobExpiryKey = function(jobExpiryKey) {
     //test if key provide is valid job expiry key 
-    var isJobExpiryKey =
-        new RegExp('^' + this.options.prefix + ':scheduler:').test(jobExpiryKey);
+    var isJobExpiryKey = this._jobExpiryKeyValidator.test(jobExpiryKey);
 
     return isJobExpiryKey;
 };
@@ -114,6 +113,7 @@ Queue.prototype._readJobData = function(jobDataKey, done) {
 
 
 /**
+ * @function
  * @description Enable redis expiry keys notifications
  * @public
  */
@@ -172,7 +172,7 @@ Queue.prototype._buildJob = function(jobDefinition, done) {
                 }
             },
             isValid: function(next) {
-                //check must job for required attributes
+                //check job for required attributes
                 //
                 //a valid job must have a type and
                 //associated data
@@ -661,6 +661,10 @@ kue.createQueue = function(options) {
 
     //instatiare kue
     var queue = createQueue.call(kue, options);
+
+    //create job expiry key RegEx validator
+    queue._jobExpiryKeyValidator =
+        new RegExp('^' + queue.options.prefix + ':scheduler:');
 
     //a redis client for scheduling key expiry
     // queue.scheduler = redis.createClientFactory(options);
