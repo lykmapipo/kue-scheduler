@@ -2,6 +2,7 @@
 
 //dependencies
 var expect = require('chai').expect;
+var faker = require('faker');
 var path = require('path');
 var uuid = require('node-uuid');
 var kue = require(path.join(__dirname, '..', 'index'));
@@ -42,6 +43,15 @@ describe('Queue Scheduling Capabilities', function() {
 
         expect(Queue._getJobExpiryKey(jobuuid))
             .to.be.equal(options.prefix + ':scheduler:' + jobuuid);
+
+        done();
+    });
+
+    it('should be able to validate job expriration key', function(done) {
+        var validJobExpiryKey = Queue._getJobExpiryKey(uuid.v1());
+
+        expect(Queue._isJobExpiryKey(validJobExpiryKey)).to.be.true;
+        expect(Queue._isJobExpiryKey(faker.name.findName())).to.be.false;
 
         done();
     });

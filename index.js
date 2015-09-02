@@ -24,16 +24,6 @@ var datejs = require('date.js');
 var uuid = require('node-uuid');
 var humanInterval = require('human-interval');
 var CronTime = require('cron').CronTime;
-var redisFilter;
-
-/**
- * filter not related to kue messages
- *
- * @param jobExpKey
- */
-function filterBazar(jobExpKey) {
-    return jobExpKey.match(redisFilter);
-}
 
 
 /**
@@ -45,6 +35,22 @@ function filterBazar(jobExpKey) {
 Queue.prototype._getJobExpiryKey = function(uuid) {
     //this refer to kue Queue instance context
     return this.options.prefix + ':scheduler:' + uuid;
+};
+
+
+/**
+ * @function
+ * @description test a give key if is valid job expiry key
+ * @param  {String}  jobExpiryKey a key to test
+ * @return {Boolean} true if is valid job expiry key else false
+ * @private
+ */
+Queue.prototype._isJobExpiryKey = function(jobExpiryKey) {
+    //test if key provide is valid job expiry key 
+    var isJobExpiryKey =
+        new RegExp('^' + this.options.prefix + ':scheduler:').test(jobExpiryKey);
+
+    return isJobExpiryKey;
 };
 
 
@@ -338,7 +344,8 @@ Queue.prototype._subscribe = function() {
         ._listener
         .on('message', function(channel, jobExpiryKey) {
 
-            if (!filterBazar(jobExpiryKey)) {
+            //test if the event key is job expiry key 
+            if (!self._isJobExpiryKey(jobExpiryKey)) {
                 return;
             }
 
@@ -651,9 +658,6 @@ kue.createQueue = function(options) {
 
     //store passed options into Queue
     Queue.prototype.options = options;
-
-    //fill redisFilter
-    redisFilter = new RegExp('^' + options.prefix + ':');
 
     //instatiare kue
     var queue = createQueue.call(kue, options);
