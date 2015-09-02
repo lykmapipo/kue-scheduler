@@ -4,7 +4,7 @@
  * @module
  * @name kue-scheduler
  * @description A job scheduling utility for kue
- * @return {kue} a patched kue with job scheduling capability
+ * @return {kue} a patched kue with job scheduling capabilities
  * @public
  */
 
@@ -14,7 +14,7 @@ var kue = require('kue');
 var Job = kue.Job;
 var Queue = kue;
 //
-//make use kue redis factories
+//make use of kue redis factories
 //for establishing redis connections
 //
 var redis = kue.redis;
@@ -35,6 +35,21 @@ var CronTime = require('cron').CronTime;
 Queue.prototype._getJobExpiryKey = function(uuid) {
     //this refer to kue Queue instance context
     return this.options.prefix + ':scheduler:' + uuid;
+};
+
+
+/**
+ * @function
+ * @description test a give key if is valid job expiry key
+ * @param  {String}  jobExpiryKey a key to test
+ * @return {Boolean} true if is valid job expiry key else false
+ * @private
+ */
+Queue.prototype._isJobExpiryKey = function(jobExpiryKey) {
+    //test if key provide is valid job expiry key 
+    var isJobExpiryKey = this._jobExpiryKeyValidator.test(jobExpiryKey);
+
+    return isJobExpiryKey;
 };
 
 
@@ -98,6 +113,7 @@ Queue.prototype._readJobData = function(jobDataKey, done) {
 
 
 /**
+ * @function
  * @description Enable redis expiry keys notifications
  * @public
  */
@@ -156,7 +172,7 @@ Queue.prototype._buildJob = function(jobDefinition, done) {
                 }
             },
             isValid: function(next) {
-                //check must job for required attributes
+                //check job for required attributes
                 //
                 //a valid job must have a type and
                 //associated data
@@ -327,6 +343,11 @@ Queue.prototype._subscribe = function() {
     this
         ._listener
         .on('message', function(channel, jobExpiryKey) {
+
+            //test if the event key is job expiry key 
+            if (!self._isJobExpiryKey(jobExpiryKey)) {
+                return;
+            }
 
             async
             .waterfall(
@@ -640,6 +661,10 @@ kue.createQueue = function(options) {
 
     //instatiare kue
     var queue = createQueue.call(kue, options);
+
+    //create job expiry key RegEx validator
+    queue._jobExpiryKeyValidator =
+        new RegExp('^' + queue.options.prefix + ':scheduler:');
 
     //a redis client for scheduling key expiry
     // queue.scheduler = redis.createClientFactory(options);

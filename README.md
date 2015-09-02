@@ -13,11 +13,10 @@ Scheduling API is heavily inspired and borrowed from [agenda](https://github.com
 
 - [kue 0.9.3+](https://github.com/Automattic/kue)
 
-- Enabling keyspace notification using `redis-cli`, if `kue-scheduler` implicit failed to enable 
+- If `kue-scheduler` failed to enable keyspace notification(s) automatic, then you have to enable them using `redis-cli` 
 ```sh
 $ redis-cli config set notify-keyspace-events Ex
 ```
-*Note: This is can be done programmatic, using [enableExpiryNotifications](#enableexpirynotifications) if you have permissions.*
 
 
 ## Installation
@@ -35,10 +34,6 @@ Example `schedule a job to run every two seconds from now`
 var kue = require('kue-scheduler');
 var Queue = kue.createQueue();
 
-//Enable key expiry notifications
-//if not yet done through redis-clis
-Queue.enableExpiryNotifications();
-
 //create a job instance
 var job = Queue
             .createJob('every', data)
@@ -48,7 +43,6 @@ var job = Queue
 
 //schedule it to run every 2 seconds
 Queue.every('2 seconds', job);
-
 
 //somewhere process your scheduled jobs
 Queue.process('every', function(job, done) {
@@ -128,10 +122,6 @@ Runs a given `job instance` every after a given `interval`.
 ```js
 var kue = require('kue-scheduler');
 var Queue = kue.createQueue();
-
-//Enable key expiry notifications
-//if not yet done through redis-clis
-Queue.enableExpiryNotifications();
 
 //create a job instance
 var job = Queue
