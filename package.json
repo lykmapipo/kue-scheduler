@@ -31,6 +31,16 @@
         "url": "https://github.com/lykmapipo/kue-scheduler/issues"
     },
     "homepage": "https://github.com/lykmapipo/kue-scheduler",
+    "contributors": [{
+        "name": "lykmapipo",
+        "github": "https://github.com/lykmapipo"
+    }, {
+        "name": "keenondrums",
+        "github": "https://github.com/keenondrums"
+    }, {
+        "name": "throrin19",
+        "github": "https://github.com/throrin19"
+    }],
     "dependencies": {
         "cron": "^1.0.9",
         "date.js": "^0.2.0",

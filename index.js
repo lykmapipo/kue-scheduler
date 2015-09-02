@@ -14,7 +14,7 @@ var kue = require('kue');
 var Job = kue.Job;
 var Queue = kue;
 //
-//make use kue redis factories
+//make use of kue redis factories
 //for establishing redis connections
 //
 var redis = kue.redis;
