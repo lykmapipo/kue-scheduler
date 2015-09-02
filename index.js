@@ -345,7 +345,9 @@ Queue.prototype._subscribe = function() {
         .on('message', function(channel, jobExpiryKey) {
 
             //test if the event key is job expiry key 
+            //and emit `scheduler unknown job expiry key` if not
             if (!self._isJobExpiryKey(jobExpiryKey)) {
+                self.emit('scheduler unknown job expiry key', jobExpiryKey);
                 return;
             }
 
@@ -667,7 +669,6 @@ kue.createQueue = function(options) {
         new RegExp('^' + queue.options.prefix + ':scheduler:');
 
     //a redis client for scheduling key expiry
-    // queue.scheduler = redis.createClientFactory(options);
     queue._scheduler = redis.createClient();
 
     //a redis client to listen for key expiry 
