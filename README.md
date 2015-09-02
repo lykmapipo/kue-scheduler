@@ -13,11 +13,10 @@ Scheduling API is heavily inspired and borrowed from [agenda](https://github.com
 
 - [kue 0.9.3+](https://github.com/Automattic/kue)
 
-- Enabling keyspace notification using `redis-cli`, if `kue-scheduler` implicit failed to enable 
+- If automatic keyspace notification(s) failed, then you have to enable them using `redis-cli` 
 ```sh
 $ redis-cli config set notify-keyspace-events Ex
 ```
-*Note: This is can be done programmatic, using [enableExpiryNotifications](#enableexpirynotifications) if you have permissions.*
 
 
 ## Installation
