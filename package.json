@@ -1,53 +1,54 @@
 {
-    "name": "kue-scheduler",
-    "version": "0.2.0",
-    "description": "A job scheduler utility for kue, backed by redis and built for node.js",
-    "main": "index.js",
-    "scripts": {
-        "test": "grunt test"
-    },
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/lykmapipo/kue-scheduler.git"
-    },
-    "keywords": [
-        "kue",
-        "queue",
-        "que",
-        "q",
-        "schedule",
-        "every",
-        "now",
-        "at",
-        "delayed",
-        "jobs",
-        "redis",
-        "job",
-        "worker"
-    ],
-    "author": "lykmapipo",
-    "license": "MIT",
-    "bugs": {
-        "url": "https://github.com/lykmapipo/kue-scheduler/issues"
-    },
-    "homepage": "https://github.com/lykmapipo/kue-scheduler",
-    "dependencies": {
-        "cron": "^1.0.9",
-        "date.js": "^0.2.0",
-        "human-interval": "^0.1.4",
-        "node-uuid": "^1.4.3"
-    },
-    "devDependencies": {
-        "async": "^0.9.0",
-        "chai": "^2.2.0",
-        "faker": "^2.1.2",
-        "grunt": "^0.4.5",
-        "grunt-contrib-jshint": "^0.11.1",
-        "grunt-mocha-test": "^0.12.7",
-        "jshint-stylish": "^1.0.1",
-        "kue": "^0.9.3",
-        "lodash": "^3.6.0",
-        "mocha": "^2.2.4",
-        "moment": "^2.10.2"
-    }
+  "name": "kue-scheduler",
+  "version": "0.2.0",
+  "description": "A job scheduler utility for kue, backed by redis and built for node.js",
+  "main": "index.js",
+  "scripts": {
+    "test": "grunt test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lykmapipo/kue-scheduler.git"
+  },
+  "keywords": [
+    "kue",
+    "queue",
+    "que",
+    "q",
+    "schedule",
+    "every",
+    "now",
+    "at",
+    "delayed",
+    "jobs",
+    "redis",
+    "job",
+    "worker"
+  ],
+  "author": "lykmapipo",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/lykmapipo/kue-scheduler/issues"
+  },
+  "homepage": "https://github.com/lykmapipo/kue-scheduler",
+  "dependencies": {
+    "cron": "^1.0.9",
+    "date.js": "^0.2.0",
+    "human-interval": "^0.1.4",
+    "node-uuid": "^1.4.3",
+    "redis": "^1.0.0"
+  },
+  "devDependencies": {
+    "async": "^0.9.0",
+    "chai": "^2.2.0",
+    "faker": "^2.1.2",
+    "grunt": "^0.4.5",
+    "grunt-contrib-jshint": "^0.11.1",
+    "grunt-mocha-test": "^0.12.7",
+    "jshint-stylish": "^1.0.1",
+    "kue": "^0.9.3",
+    "lodash": "^3.6.0",
+    "mocha": "^2.2.4",
+    "moment": "^2.10.2"
+  }
 }
