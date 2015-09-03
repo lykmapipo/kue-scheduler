@@ -32,12 +32,13 @@ var CronTime = require('cron').CronTime;
  * @private
  */
 Queue.prototype._checkJobAlreadyScheduled = function (name) {
+    var queue = this;
     var redisCli = redis.createClient();
     var regExp = new RegExp(name);
     var iteratee = 0;
     var keys = [];
     do {
-        redisCli.scan(iteratee, 'MATCH', kuePrefix + ':scheduler:data:*',function (res){
+        redisCli.scan(iteratee, 'MATCH', queue.options.prefix + ':scheduler:data:*', function (res) {
             iteratee = parseInt(res[0]);
             if (res[1].length) {
                 keys.push(res[1]);
@@ -69,7 +70,7 @@ Queue.prototype._checkJobAlreadyDelayed = function (name) {
     var redisCli = redis.createClient();
     var keys = [];
 
-    return redisCli.zrange(kuePrefix + ':jobs:delayed', 0, -1, function (ids) {
+    return redisCli.zrange(queue.options.prefix + ':jobs:delayed', 0, -1, function (ids) {
         keys = _.map(ids, function (id) {
             return queue.options.prefix + ':job:' + id;
         });
@@ -92,7 +93,7 @@ Queue.prototype._checkJobAlreadyDelayed = function (name) {
  * @return {String} a job expiry key
  * @private
  */
-Queue.prototype._checkAlreadySheduled = function(uuid) {
+Queue.prototype._checkAlreadySheduled = function (uuid) {
     //this refer to kue Queue instance context
     return this.options.prefix + ':scheduler:' + uuid;
 };
@@ -103,7 +104,7 @@ Queue.prototype._checkAlreadySheduled = function(uuid) {
  * @return {String} a job expiry key
  * @private
  */
-Queue.prototype._getJobExpiryKey = function(uuid) {
+Queue.prototype._getJobExpiryKey = function (uuid) {
     //this refer to kue Queue instance context
     return this.options.prefix + ':scheduler:' + uuid;
 };
@@ -116,7 +117,7 @@ Queue.prototype._getJobExpiryKey = function(uuid) {
  * @return {Boolean} true if is valid job expiry key else false
  * @private
  */
-Queue.prototype._isJobExpiryKey = function(jobExpiryKey) {
+Queue.prototype._isJobExpiryKey = function (jobExpiryKey) {
     //test if key provide is valid job expiry key 
     var isJobExpiryKey = this._jobExpiryKeyValidator.test(jobExpiryKey);
 
@@ -130,7 +131,7 @@ Queue.prototype._isJobExpiryKey = function(jobExpiryKey) {
  * @return {String} a scheduled job uuid
  * @private
  */
-Queue.prototype._getJobUUID = function(jobExpiryKey) {
+Queue.prototype._getJobUUID = function (jobExpiryKey) {
     //this refer to kue Queue instance context
     return jobExpiryKey.split(':')[2];
 };
@@ -142,7 +143,7 @@ Queue.prototype._getJobUUID = function(jobExpiryKey) {
  * @return {String} a key to retrieve a scheduled job data
  * @private
  */
-Queue.prototype._getJobDataKey = function(uuid) {
+Queue.prototype._getJobDataKey = function (uuid) {
     //this refer to kue Queue instance context
     return this.options.prefix + ':scheduler:data:' + uuid;
 };
@@ -153,17 +154,17 @@ Queue.prototype._getJobDataKey = function(uuid) {
  * @description save scheduled job data into redis backend
  * @private
  */
-Queue.prototype._saveJobData = function(jobDataKey, jobData, done) {
+Queue.prototype._saveJobData = function (jobDataKey, jobData, done) {
     //this refer to kue Queue instance context
 
     this
         ._scheduler
         .set(
-            jobDataKey,
-            JSON.stringify(jobData),
-            function(error /*, response*/ ) {
-                done(error, jobData);
-            });
+        jobDataKey,
+        JSON.stringify(jobData),
+        function (error /*, response*/) {
+            done(error, jobData);
+        });
 };
 
 
@@ -172,12 +173,12 @@ Queue.prototype._saveJobData = function(jobDataKey, jobData, done) {
  * @description retrieved saved scheduled job data from redis backend
  * @private
  */
-Queue.prototype._readJobData = function(jobDataKey, done) {
+Queue.prototype._readJobData = function (jobDataKey, done) {
     //this refer to kue Queue instance context
 
     this
         ._scheduler
-        .get(jobDataKey, function(error, data) {
+        .get(jobDataKey, function (error, data) {
             done(error, JSON.parse(data));
         });
 };
@@ -188,7 +189,7 @@ Queue.prototype._readJobData = function(jobDataKey, done) {
  * @description Enable redis expiry keys notifications
  * @public
  */
-Queue.prototype.enableExpiryNotifications = function() {
+Queue.prototype.enableExpiryNotifications = function () {
     //this refer to Queue instance context
 
     //enable 
@@ -207,7 +208,7 @@ Queue.prototype.enableExpiryNotifications = function() {
  * @param  {Function} done a callback to invoke on error or success
  * @private
  */
-Queue.prototype._parse = function(str, done) {
+Queue.prototype._parse = function (str, done) {
     //this refer to kue Queue instance context
 
     try {
@@ -226,14 +227,14 @@ Queue.prototype._parse = function(str, done) {
  * @param {Function} done a callback to invoke on error or success
  * @private
  */
-Queue.prototype._buildJob = function(jobDefinition, done) {
+Queue.prototype._buildJob = function (jobDefinition, done) {
     //this refer to kue Queue instance context
     var self = this;
 
 
     async
-    .parallel({
-            isDefined: function(next) {
+        .parallel({
+            isDefined: function (next) {
                 //is job definition provided
                 var isObject = _.isPlainObject(jobDefinition);
                 if (!isObject) {
@@ -242,7 +243,7 @@ Queue.prototype._buildJob = function(jobDefinition, done) {
                     next(null, true);
                 }
             },
-            isValid: function(next) {
+            isValid: function (next) {
                 //check job for required attributes
                 //
                 //a valid job must have a type and
@@ -287,7 +288,7 @@ Queue.prototype._buildJob = function(jobDefinition, done) {
                     );
 
                 //apply all job attributes into kue job instance
-                _.keys(jobDefinition).forEach(function(attribute) {
+                _.keys(jobDefinition).forEach(function (attribute) {
                     //if given job definition attribute
                     //is one of job instance method
                     //apply it
@@ -321,13 +322,12 @@ Queue.prototype._buildJob = function(jobDefinition, done) {
 };
 
 
-
 /**
  * @function
  * @description compute next run time of the given job data
  * @private
  */
-Queue.prototype._computeNextRunTime = function(jobData, done) {
+Queue.prototype._computeNextRunTime = function (jobData, done) {
     //this refer to kue Queue instance context
     if (!jobData) {
         return done(new Error('Invalid job data'));
@@ -338,69 +338,69 @@ Queue.prototype._computeNextRunTime = function(jobData, done) {
 
 
     async
-    .parallel({
-        //compute next run from cron interval
-        cron: function(after) {
-            try {
-                //last run of the job is now if not exist
-                var lastRun =
-                    jobData.lastRun ? new Date(jobData.lastRun) : new Date();
+        .parallel({
+            //compute next run from cron interval
+            cron: function (after) {
+                try {
+                    //last run of the job is now if not exist
+                    var lastRun =
+                        jobData.lastRun ? new Date(jobData.lastRun) : new Date();
 
-                //compute next date from the cron interval
-                var cronTime = new CronTime(interval);
-                var nextRun = cronTime._getNextDateFrom(lastRun);
+                    //compute next date from the cron interval
+                    var cronTime = new CronTime(interval);
+                    var nextRun = cronTime._getNextDateFrom(lastRun);
 
-                // Handle cronTime giving back the same date
-                // for the next run time
-                if (nextRun.valueOf() === lastRun.valueOf()) {
-                    nextRun =
-                        cronTime._getNextDateFrom(
-                            new Date(lastRun.valueOf() + 1000)
-                        );
+                    // Handle cronTime giving back the same date
+                    // for the next run time
+                    if (nextRun.valueOf() === lastRun.valueOf()) {
+                        nextRun =
+                            cronTime._getNextDateFrom(
+                                new Date(lastRun.valueOf() + 1000)
+                            );
+                    }
+
+                    //return computed time
+                    after(null, nextRun.toDate());
+
+                } catch (ex) {
+                    //to allow parallel run with other interval parser
+                    after(null, null);
                 }
+            },
 
-                //return computed time
-                after(null, nextRun.toDate());
+            //compute next run from human interval
+            human: function (after) {
+                try {
+                    //last run of the job is now if not exist
+                    var lastRun =
+                        jobData.lastRun ? new Date(jobData.lastRun) : new Date();
 
-            } catch (ex) {
-                //to allow parallel run with other interval parser
-                after(null, null);
+                    var nextRun =
+                        new Date(lastRun.valueOf() + humanInterval(interval));
+
+                    //return computed time
+                    after(null, nextRun);
+                } catch (ex) {
+                    //to allow parallel run with other interval parser
+                    after(null, null);
+                }
             }
-        },
-
-        //compute next run from human interval
-        human: function(after) {
-            try {
-                //last run of the job is now if not exist
-                var lastRun =
-                    jobData.lastRun ? new Date(jobData.lastRun) : new Date();
-
-                var nextRun =
-                    new Date(lastRun.valueOf() + humanInterval(interval));
-
-                //return computed time
-                after(null, nextRun);
-            } catch (ex) {
-                //to allow parallel run with other interval parser
-                after(null, null);
+        }, function finish(error, results) {
+            //was parsed as cron interval?
+            if (!_.isNull(results.cron)) {
+                return done(null, results.cron);
             }
-        }
-    }, function finish(error, results) {
-        //was parsed as cron interval?
-        if (!_.isNull(results.cron)) {
-            return done(null, results.cron);
-        }
 
-        //was parsed as human interval?
-        else if (!_.isNull(results.human)) {
-            return done(null, results.human);
-        }
+            //was parsed as human interval?
+            else if (!_.isNull(results.human)) {
+                return done(null, results.human);
+            }
 
-        //all parser failed
-        else {
-            return done(new Error('Invalid reccur interval'));
-        }
-    });
+            //all parser failed
+            else {
+                return done(new Error('Invalid reccur interval'));
+            }
+        });
 };
 
 
@@ -409,14 +409,14 @@ Queue.prototype._computeNextRunTime = function(jobData, done) {
  * @description subscribe to key expiry events
  * @private
  */
-Queue.prototype._subscribe = function() {
+Queue.prototype._subscribe = function () {
     //this refer to kue Queue instance context
     var self = this;
 
     //listen for job key expiry
     this
         ._listener
-        .on('message', function(channel, jobExpiryKey) {
+        .on('message', function (channel, jobExpiryKey) {
 
             //test if the event key is job expiry key 
             //and emit `scheduler unknown job expiry key` if not
@@ -426,7 +426,7 @@ Queue.prototype._subscribe = function() {
             }
 
             async
-            .waterfall(
+                .waterfall(
                 [
                     //get job data
                     function getJobData(next) {
@@ -439,7 +439,7 @@ Queue.prototype._subscribe = function() {
                     //compute next run time
                     function computeNextRun(jobData, next) {
                         self
-                            ._computeNextRunTime(jobData, function(error, nextRunTime) {
+                            ._computeNextRunTime(jobData, function (error, nextRunTime) {
                                 if (error) {
                                     next(error);
                                 } else {
@@ -456,7 +456,7 @@ Queue.prototype._subscribe = function() {
 
                         self
                             ._scheduler
-                            .set(jobExpiryKey, '', 'PX', delay, function(error) {
+                            .set(jobExpiryKey, '', 'PX', delay, function (error) {
                                 if (error) {
                                     next(error);
                                 } else {
@@ -468,7 +468,7 @@ Queue.prototype._subscribe = function() {
                         self._buildJob(jobDefinition, next);
                     }
                 ],
-                function(error, job) {
+                function (error, job) {
                     if (error) {
                         self.emit('schedule error', error);
                     } else {
@@ -499,15 +499,28 @@ Queue.prototype._subscribe = function() {
  * @param  {Job} job valid kue job instance which has not been saved
  * @private
  */
-Queue.prototype.every = function(interval, job) {
+Queue.prototype.every = function (interval, job, unique) {
     //this refer to kue Queue instance context
     var self = this;
 
-    if (arguments.length !== 2) {
+    if (arguments.length < 2) {
         self.emit(
             'schedule error',
             new Error('Invalid number of parameters. See API doc.')
         );
+    }
+
+    if (!job.type) {
+        self.emit(
+            'schedule error',
+            new Error('Invalid job type. See API doc.')
+        );
+    }
+
+    if (unique) {
+        if (self._checkJobAlreadyScheduled(job.type)) {
+            return;
+        }
     }
 
     //extend job definition with
@@ -524,38 +537,38 @@ Queue.prototype.every = function(interval, job) {
     var jobUUID = uuid.v1();
 
     async
-    .parallel({
-        jobExpiryKey: function(next) {
-            next(null, self._getJobExpiryKey(jobUUID));
-        },
-        jobDataKey: function(next) {
-            next(null, self._getJobDataKey(jobUUID));
-        },
-        nextRunTime: function(next) {
-            self._computeNextRunTime(jobDefinition, next);
-        }
-    }, function finish(error, results) {
-
-        var now = new Date();
-        var delay = results.nextRunTime.getTime() - now.getTime();
-
-        async
-        .waterfall([
-            function saveJobData(next) {
-                //save job data
-                self._saveJobData(results.jobDataKey, jobDefinition, next);
+        .parallel({
+            jobExpiryKey: function (next) {
+                next(null, self._getJobExpiryKey(jobUUID));
             },
-            function setJobKeyExpiry(jobData, next) {
-                //save key an wait for it to expiry
-                self._scheduler.set(results.jobExpiryKey, '', 'PX', delay, next);
+            jobDataKey: function (next) {
+                next(null, self._getJobDataKey(jobUUID));
+            },
+            nextRunTime: function (next) {
+                self._computeNextRunTime(jobDefinition, next);
             }
-        ], function(error) {
-            if (error) {
-                self.emit('schedule error', error);
-            }
-        });
+        }, function finish(error, results) {
 
-    });
+            var now = new Date();
+            var delay = results.nextRunTime.getTime() - now.getTime();
+
+            async
+                .waterfall([
+                    function saveJobData(next) {
+                        //save job data
+                        self._saveJobData(results.jobDataKey, jobDefinition, next);
+                    },
+                    function setJobKeyExpiry(jobData, next) {
+                        //save key an wait for it to expiry
+                        self._scheduler.set(results.jobExpiryKey, '', 'PX', delay, next);
+                    }
+                ], function (error) {
+                    if (error) {
+                        self.emit('schedule error', error);
+                    }
+                });
+
+        });
 };
 
 
@@ -575,15 +588,28 @@ Queue.prototype.every = function(interval, job) {
  * @param  {Job}   jobDefinition valid kue job instance which has not been saved
  * @private
  */
-Queue.prototype.schedule = function(when, job) {
+Queue.prototype.schedule = function (when, job) {
     //this refer to kue Queue instance context
     var self = this;
 
-    if (arguments.length !== 2) {
+    if (arguments.length < 2) {
         self.emit(
             'schedule error',
             new Error('Invalid number of parameters. See API doc.')
         );
+    }
+
+    if (!job.type) {
+        self.emit(
+            'schedule error',
+            new Error('Invalid job type. See API doc.')
+        );
+    }
+
+    if (unique) {
+        if (self._checkJobAlreadyDelayed(job.type)) {
+            return;
+        }
     }
 
     var jobDefinition = _.extend(job.toJSON(), {
@@ -591,7 +617,7 @@ Queue.prototype.schedule = function(when, job) {
     });
 
     async
-    .waterfall(
+        .waterfall(
         [
             function computeDelay(next) {
                 //when is date instance
@@ -620,7 +646,7 @@ Queue.prototype.schedule = function(when, job) {
                 self._buildJob(delayedJobDefinition, next);
             },
             function saveJob(job, validations, next) {
-                job.save(function(error) {
+                job.save(function (error) {
                     if (error) {
                         next(error);
                     } else {
@@ -650,7 +676,7 @@ Queue.prototype.schedule = function(when, job) {
  * @param  {Job}   job a valid kue job instance which has not been saved
  * @private
  */
-Queue.prototype.now = function(job) {
+Queue.prototype.now = function (job) {
     //this refer to kue Queue instance context
     var self = this;
 
@@ -663,13 +689,13 @@ Queue.prototype.now = function(job) {
     });
 
     async
-    .waterfall(
+        .waterfall(
         [
             function buildJob(next) {
                 self._buildJob(jobDefinition, next);
             },
             function saveJob(job, validations, next) {
-                job.save(function(error) {
+                job.save(function (error) {
                     if (error) {
                         next(error);
                     } else {
@@ -701,7 +727,7 @@ var shutdown = Queue.prototype.shutdown;
  * @return {Queue} for chaining
  * @api public
  */
-Queue.prototype.shutdown = function( /*fn, timeout, type*/ ) {
+Queue.prototype.shutdown = function (/*fn, timeout, type*/) {
     //this refer to kue Queue instance context
 
     //unsubscribe to key expiry events
@@ -723,7 +749,7 @@ Queue.prototype.shutdown = function( /*fn, timeout, type*/ ) {
 //to be stored in the Queue instance
 //and setup scheduler resources
 var createQueue = kue.createQueue;
-kue.createQueue = function(options) {
+kue.createQueue = function (options) {
     options = _.merge({
         prefix: 'q',
         redis: {
