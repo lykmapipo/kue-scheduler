@@ -267,6 +267,7 @@ It will be nice, if you open an issue first so that we can know what is going on
 - [ ] Scheduler restart after shutdown
 - [ ] Reschedule/scan jobs on restart
 - [ ] Test multi process scheduler
+- [ ] Support unique reccur jobs
 
 
 ## License 
