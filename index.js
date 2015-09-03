@@ -329,6 +329,9 @@ Queue.prototype._buildJob = function(jobDefinition, done) {
  */
 Queue.prototype._computeNextRunTime = function(jobData, done) {
     //this refer to kue Queue instance context
+    if (!jobData) {
+        return done(new Error('Invalid job data'));
+    }
 
     //grab job reccur interval
     var interval = jobData.reccurInterval;
@@ -416,7 +419,9 @@ Queue.prototype._subscribe = function() {
         .on('message', function(channel, jobExpiryKey) {
 
             //test if the event key is job expiry key 
+            //and emit `scheduler unknown job expiry key` if not
             if (!self._isJobExpiryKey(jobExpiryKey)) {
+                self.emit('scheduler unknown job expiry key', jobExpiryKey);
                 return;
             }
 
@@ -738,7 +743,6 @@ kue.createQueue = function(options) {
         new RegExp('^' + queue.options.prefix + ':scheduler:');
 
     //a redis client for scheduling key expiry
-    // queue.scheduler = redis.createClientFactory(options);
     queue._scheduler = redis.createClient();
 
     //a redis client to listen for key expiry 

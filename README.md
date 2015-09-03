@@ -44,6 +44,7 @@ var job = Queue
 //schedule it to run every 2 seconds
 Queue.every('2 seconds', job);
 
+
 //somewhere process your scheduled jobs
 Queue.process('every', function(job, done) {
     ...
@@ -192,7 +193,7 @@ Queue.process('now', function(job, done) {
 ```
 
 ## Events
-Currently the only way to interact with `kue-scheduler` is through its events. `kue-scheduler` fires `schedule error` and `schedule success` events.
+Currently the only way to interact with `kue-scheduler` is through its events. `kue-scheduler` fires `schedule error`, `schedule success` and `scheduler unknown job expiry key` events.
 
 ### `schedule error`
 Use it to interact with `kue-scheduler` to get notified when an error occur.
@@ -232,6 +233,18 @@ var job = Queue
 Queue.now(job);
 ```
 
+### `scheduler unknown job expiry key`
+Fired when `kue-scheduler` receive unknown key event from redis. Use it to be notified on unknown key(s) events.
+
+```js
+Queue
+    .on('scheduler unknown job expiry key', function(message) {
+
+        expect(Queue._isJobExpiryKey(message)).to.be.false;
+
+    });
+```
+
 
 ## Testing
 * Clone this repository
@@ -251,8 +264,10 @@ It will be nice, if you open an issue first so that we can know what is going on
 
 
 ## TODO
-- [ ] Graceful shutdown
 - [ ] Scheduler restart after shutdown
+- [ ] Reschedule/scan jobs on restart
+- [ ] Test multi process scheduler
+- [ ] Support unique reccur jobs
 
 
 ## License 
