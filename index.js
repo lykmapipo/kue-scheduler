@@ -69,7 +69,7 @@ Queue.prototype._getJobUUID = function(jobExpiryKey) {
  * @function
  * @description generate a storage key for the scheduled job data
  * @return {String} a key to retrieve a scheduled job data
- * @private 
+ * @private
  */
 Queue.prototype._getJobDataKey = function(uuid) {
     //this refer to kue Queue instance context
@@ -258,6 +258,9 @@ Queue.prototype._buildJob = function(jobDefinition, done) {
  */
 Queue.prototype._computeNextRunTime = function(jobData, done) {
     //this refer to kue Queue instance context
+    if (!jobData) {
+        return done(new Error('Invalid job data'));
+    }
 
     //grab job reccur interval
     var interval = jobData.reccurInterval;
@@ -276,7 +279,7 @@ Queue.prototype._computeNextRunTime = function(jobData, done) {
                 var cronTime = new CronTime(interval);
                 var nextRun = cronTime._getNextDateFrom(lastRun);
 
-                // Handle cronTime giving back the same date 
+                // Handle cronTime giving back the same date
                 // for the next run time
                 if (nextRun.valueOf() === lastRun.valueOf()) {
                     nextRun =
@@ -345,7 +348,9 @@ Queue.prototype._subscribe = function() {
         .on('message', function(channel, jobExpiryKey) {
 
             //test if the event key is job expiry key 
+            //and emit `scheduler unknown job expiry key` if not
             if (!self._isJobExpiryKey(jobExpiryKey)) {
+                self.emit('scheduler unknown job expiry key', jobExpiryKey);
                 return;
             }
 
@@ -411,14 +416,14 @@ Queue.prototype._subscribe = function() {
 /**
  * @function
  * @description schedule a job to run every after a specified interval
- * 
+ *
  *              If an error occur, it will be emitted using `schedule error` key
  *              with error passed as first parameter on event.
  *              If job schedule successfully, it will be emitted using
  *              `schedule success` key with job instance passed as a first parameter
  *              on event.
- *              
- * @param  {String} interval      scheduled interval in either human interval or 
+ *
+ * @param  {String} interval      scheduled interval in either human interval or
  *                                cron format
  * @param  {Job} job valid kue job instance which has not been saved
  * @private
@@ -485,16 +490,16 @@ Queue.prototype.every = function(interval, job) {
 
 /**
  * @function
- * @description schedules a job to run once at a given time. 
- *              `when` can be a `Date` or a valid `date.js string` 
+ * @description schedules a job to run once at a given time.
+ *              `when` can be a `Date` or a valid `date.js string`
  *              such as `tomorrow at 5pm`.
- *              
+ *
  *              If an error occur, it will be emitted using `schedule error` key
  *              with error passed as first parameter on event.
  *              If job schedule successfully, it will be emitted using
  *              `schedule success` key with job instance passed as a first parameter
  *              on event.
- *              
+ *
  * @param  {Date|String}   when      when should this job run
  * @param  {Job}   jobDefinition valid kue job instance which has not been saved
  * @private
@@ -667,7 +672,6 @@ kue.createQueue = function(options) {
         new RegExp('^' + queue.options.prefix + ':scheduler:');
 
     //a redis client for scheduling key expiry
-    // queue.scheduler = redis.createClientFactory(options);
     queue._scheduler = redis.createClient();
 
     //a redis client to listen for key expiry 
