@@ -38,18 +38,18 @@ Queue.prototype._checkJobAlreadyScheduled = function (name) {
     var iteratee = 0;
     var keys = [];
     do {
-        redisCli.scan(iteratee, 'MATCH', queue.options.prefix + ':scheduler:data:*', function (res) {
-            iteratee = parseInt(res[0]);
+        iteratee = redisCli.scan(iteratee, 'MATCH', queue.options.prefix + ':scheduler:data:*', function (err, res) {
             if (res[1].length) {
                 keys.push(res[1]);
             }
+            return parseInt(res[0]);
         });
     }
     while (iteratee != 0);
 
     keys = _.flatten(keys);
     keys = _.map(keys, function (key) {
-        return redisCli.get(key, function (res) {
+        return redisCli.get(key, function (err, res) {
             return res;
         });
     });
@@ -70,12 +70,12 @@ Queue.prototype._checkJobAlreadyDelayed = function (name) {
     var redisCli = redis.createClient();
     var keys = [];
 
-    return redisCli.zrange(queue.options.prefix + ':jobs:delayed', 0, -1, function (ids) {
+    return redisCli.zrange(queue.options.prefix + ':jobs:delayed', 0, -1, function (err, ids) {
         keys = _.map(ids, function (id) {
             return queue.options.prefix + ':job:' + id;
         });
         keys = _.map(keys, function (key) {
-            return redisCli.hget(key, 'type', function (res) {
+            return redisCli.hget(key, 'type', function (err, res) {
                 return res;
             });
         });
@@ -588,7 +588,7 @@ Queue.prototype.every = function (interval, job, unique) {
  * @param  {Job}   jobDefinition valid kue job instance which has not been saved
  * @private
  */
-Queue.prototype.schedule = function (when, job) {
+Queue.prototype.schedule = function (when, job, unique) {
     //this refer to kue Queue instance context
     var self = this;
 
