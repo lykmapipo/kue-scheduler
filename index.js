@@ -40,9 +40,9 @@ Queue.prototype._checkJobAlreadyScheduled = function (name, uniquecb, notuniquec
 
     async.doWhilst(
         function (callback) {
-            redisCli.send_command('SCAN', iteratee, 'MATCH', queue.options.prefix + ':scheduler:data:*', function (err, res) {
+            redisCli.send_command('SCAN', [iteratee, 'MATCH', queue.options.prefix + ':scheduler:data:*'], function (err, res) {
                 if (err) {
-                    throw err;
+                    callback(err);
                 }
                 if (res[1].length) {
                     keys.push(res[1]);
@@ -73,7 +73,7 @@ Queue.prototype._checkJobAlreadyScheduled = function (name, uniquecb, notuniquec
                         throw err;
                     }
 
-                    var result =_.reduce(keys, function (total, val) {
+                    var result = _.reduce(keys, function (total, val) {
                         return total || (val.match(regExp) !== null);
                     }, false);
 
@@ -82,7 +82,9 @@ Queue.prototype._checkJobAlreadyScheduled = function (name, uniquecb, notuniquec
                         return;
                     }
 
-                    notuniquecb();
+                    if (notuniquecb) {
+                        notuniquecb();
+                    }
                 }
             );
 
@@ -97,25 +99,58 @@ Queue.prototype._checkJobAlreadyScheduled = function (name, uniquecb, notuniquec
  * @return {Boolean} true if the job is already scheduled
  * @private
  */
-Queue.prototype._checkJobAlreadyDelayed = function (name) {
+Queue.prototype._checkJobAlreadyDelayed = function (name, uniquecb, notuniquecb) {
     var queue = this;
     var redisCli = redis.createClient();
     var keys = [];
 
-    return redisCli.zrange(queue.options.prefix + ':jobs:delayed', 0, -1, function (err, ids) {
-        keys = _.map(ids, function (id) {
-            return queue.options.prefix + ':job:' + id;
-        });
-        keys = _.map(keys, function (key) {
-            return redisCli.hget(key, 'type', function (err, res) {
-                return res;
-            });
+    async.waterfall([
+            function (callback) {
+                redisCli.send_command('ZRANGE', [queue.options.prefix + ':jobs:delayed', 0, -1], function (err, ids) {
+                    keys = _.map(ids, function (id) {
+                        return queue.options.prefix + ':job:' + id;
+                    });
+                    callback(err, keys);
+                });
+            }],
+        function (err, keys) {
+            if (err) {
+                throw err;
+            }
+
+            if (!keys || !keys.length) {
+                uniquecb();
+                return;
+            }
+
+            async.map(
+                keys,
+                function (key, callback) {
+                    redisCli.hget(key, 'type', function (err, res) {
+                        callback(err, res);
+                    });
+                },
+                function (err, keys) {
+                    if (err) {
+                        throw(err);
+                    }
+
+                    var result = _.reduce(keys, function (total, val) {
+                        return total || (val === name);
+                    }, false);
+
+                    if (!result) {
+                        uniquecb();
+                        return;
+                    }
+
+                    if (notuniquecb) {
+                        notuniquecb();
+                    }
+                }
+            );
         });
 
-        return _.reduce(keys, function (total, val) {
-            return total || (val === name);
-        }, false);
-    });
 };
 
 
@@ -642,62 +677,66 @@ Queue.prototype.schedule = function (when, job, unique) {
         );
     }
 
+    var fn = function () {
+        var jobDefinition = _.extend(job.toJSON(), {
+            backoff: job._backoff
+        });
+
+        async
+            .waterfall(
+            [
+                function computeDelay(next) {
+                    //when is date instance
+                    if (when instanceof Date) {
+                        next(null, when);
+                    }
+
+                    //otherwise parse as date.js string
+                    else {
+                        self._parse(when, next);
+                    }
+                },
+                //set job delay
+                function setDelay(scheduledDate, next) {
+                    next(
+                        null,
+                        _.merge(jobDefinition, {
+                            delay: scheduledDate,
+                            data: {
+                                schedule: 'ONCE'
+                            }
+                        })
+                    );
+                },
+                function buildJob(delayedJobDefinition, next) {
+                    self._buildJob(delayedJobDefinition, next);
+                },
+                function saveJob(job, validations, next) {
+                    job.save(function (error) {
+                        if (error) {
+                            next(error);
+                        } else {
+                            next(null, job);
+                        }
+                    });
+                }
+            ],
+            function finish(error, job) {
+                if (error) {
+                    self.emit('schedule error', error);
+                } else {
+                    self.emit('schedule success', job);
+                }
+            });
+    };
+
     if (unique) {
-        if (self._checkJobAlreadyDelayed(job.type)) {
-            return;
-        }
+        self._checkJobAlreadyDelayed(job.type, fn);
+        return;
     }
 
-    var jobDefinition = _.extend(job.toJSON(), {
-        backoff: job._backoff
-    });
+    fn();
 
-    async
-        .waterfall(
-        [
-            function computeDelay(next) {
-                //when is date instance
-                if (when instanceof Date) {
-                    next(null, when);
-                }
-
-                //otherwise parse as date.js string
-                else {
-                    self._parse(when, next);
-                }
-            },
-            //set job delay
-            function setDelay(scheduledDate, next) {
-                next(
-                    null,
-                    _.merge(jobDefinition, {
-                        delay: scheduledDate,
-                        data: {
-                            schedule: 'ONCE'
-                        }
-                    })
-                );
-            },
-            function buildJob(delayedJobDefinition, next) {
-                self._buildJob(delayedJobDefinition, next);
-            },
-            function saveJob(job, validations, next) {
-                job.save(function (error) {
-                    if (error) {
-                        next(error);
-                    } else {
-                        next(null, job);
-                    }
-                });
-            }
-        ],
-        function finish(error, job) {
-            if (error) {
-                self.emit('schedule error', error);
-            } else {
-                self.emit('schedule success', job);
-            }
-        });
 };
 
 

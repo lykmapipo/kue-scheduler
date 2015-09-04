@@ -5,17 +5,13 @@ var expect = require('chai').expect;
 var path = require('path');
 var kue = require(path.join(__dirname, '..', '..', 'index'));
 var faker = require('faker');
-var redis = kue.redis;
 var Queue;
 
 describe('Queue#every', function () {
 
     before(function (done) {
-        redis = redis.createClient();
-        redis.flushall(function () {
-            Queue = kue.createQueue();
-            done();
-        });
+        Queue = kue.createQueue();
+        done();
     });
 
     after(function (done) {
@@ -88,8 +84,8 @@ describe('Queue#every', function () {
         }, 6000);
     });
 
-    it('should be able to schedule a unique job to run every 10 seconds from now', function (done) {
-        expect(Queue._checkJobAlreadyScheduled('every', null, done));
+    it('should be able to check the job is already scheduled to run every 2 seconds from now', function (done) {
+        Queue._checkJobAlreadyScheduled('every', null, done);
     });
 
 })
