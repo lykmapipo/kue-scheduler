@@ -31,32 +31,64 @@ var CronTime = require('cron').CronTime;
  * @return {Boolean} true if the job is already scheduled
  * @private
  */
-Queue.prototype._checkJobAlreadyScheduled = function (name) {
+Queue.prototype._checkJobAlreadyScheduled = function (name, uniquecb, notuniquecb) {
     var queue = this;
     var redisCli = redis.createClient();
     var regExp = new RegExp(name);
     var iteratee = 0;
     var keys = [];
-    do {
-        iteratee = redisCli.scan(iteratee, 'MATCH', queue.options.prefix + ':scheduler:data:*', function (err, res) {
-            if (res[1].length) {
-                keys.push(res[1]);
+
+    async.doWhilst(
+        function (callback) {
+            redisCli.send_command('SCAN', iteratee, 'MATCH', queue.options.prefix + ':scheduler:data:*', function (err, res) {
+                if (err) {
+                    throw err;
+                }
+                if (res[1].length) {
+                    keys.push(res[1]);
+                }
+                iteratee = parseInt(res[0]);
+                callback();
+            });
+        },
+        function () {
+            return iteratee !== 0;
+        },
+        function (err) {
+            if (err) {
+                throw err;
             }
-            return parseInt(res[0]);
-        });
-    }
-    while (iteratee != 0);
 
-    keys = _.flatten(keys);
-    keys = _.map(keys, function (key) {
-        return redisCli.get(key, function (err, res) {
-            return res;
-        });
-    });
+            keys = _.flatten(keys);
 
-    return _.reduce(keys, function (total, val) {
-        return total || (val.match(regExp) !== null);
-    }, false);
+            async.map(
+                keys,
+                function (key, callback) {
+                    redisCli.get(key, function (err, res) {
+                        callback(err, res);
+                    });
+                },
+                function (err, keys) {
+                    if (err) {
+                        throw err;
+                    }
+
+                    var result =_.reduce(keys, function (total, val) {
+                        return total || (val.match(regExp) !== null);
+                    }, false);
+
+                    if (!result) {
+                        uniquecb();
+                        return;
+                    }
+
+                    notuniquecb();
+                }
+            );
+
+        }
+    );
+
 };
 
 /**
@@ -517,58 +549,62 @@ Queue.prototype.every = function (interval, job, unique) {
         );
     }
 
+    var fn = function () {
+        //extend job definition with
+        //scheduling data
+        var jobDefinition = _.merge(job.toJSON(), {
+            reccurInterval: interval,
+            data: {
+                schedule: 'RECCUR'
+            },
+            backoff: job._backoff
+        });
+
+        //generate job uuid
+        var jobUUID = uuid.v1();
+
+        async
+            .parallel({
+                jobExpiryKey: function (next) {
+                    next(null, self._getJobExpiryKey(jobUUID));
+                },
+                jobDataKey: function (next) {
+                    next(null, self._getJobDataKey(jobUUID));
+                },
+                nextRunTime: function (next) {
+                    self._computeNextRunTime(jobDefinition, next);
+                }
+            }, function finish(error, results) {
+
+                var now = new Date();
+                var delay = results.nextRunTime.getTime() - now.getTime();
+
+                async
+                    .waterfall([
+                        function saveJobData(next) {
+                            //save job data
+                            self._saveJobData(results.jobDataKey, jobDefinition, next);
+                        },
+                        function setJobKeyExpiry(jobData, next) {
+                            //save key an wait for it to expiry
+                            self._scheduler.set(results.jobExpiryKey, '', 'PX', delay, next);
+                        }
+                    ], function (error) {
+                        if (error) {
+                            self.emit('schedule error', error);
+                        }
+                    });
+
+            });
+    };
+
     if (unique) {
-        if (self._checkJobAlreadyScheduled(job.type)) {
-            return;
-        }
+        self._checkJobAlreadyScheduled(job.type, fn);
+        return;
     }
 
-    //extend job definition with
-    //scheduling data
-    var jobDefinition = _.merge(job.toJSON(), {
-        reccurInterval: interval,
-        data: {
-            schedule: 'RECCUR'
-        },
-        backoff: job._backoff
-    });
+    fn();
 
-    //generate job uuid
-    var jobUUID = uuid.v1();
-
-    async
-        .parallel({
-            jobExpiryKey: function (next) {
-                next(null, self._getJobExpiryKey(jobUUID));
-            },
-            jobDataKey: function (next) {
-                next(null, self._getJobDataKey(jobUUID));
-            },
-            nextRunTime: function (next) {
-                self._computeNextRunTime(jobDefinition, next);
-            }
-        }, function finish(error, results) {
-
-            var now = new Date();
-            var delay = results.nextRunTime.getTime() - now.getTime();
-
-            async
-                .waterfall([
-                    function saveJobData(next) {
-                        //save job data
-                        self._saveJobData(results.jobDataKey, jobDefinition, next);
-                    },
-                    function setJobKeyExpiry(jobData, next) {
-                        //save key an wait for it to expiry
-                        self._scheduler.set(results.jobExpiryKey, '', 'PX', delay, next);
-                    }
-                ], function (error) {
-                    if (error) {
-                        self.emit('schedule error', error);
-                    }
-                });
-
-        });
 };
 
 

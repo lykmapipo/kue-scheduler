@@ -89,8 +89,7 @@ describe('Queue#every', function () {
     });
 
     it('should be able to schedule a unique job to run every 10 seconds from now', function (done) {
-        expect(Queue._checkJobAlreadyScheduled('every')).to.be.true();
-        done();
+        expect(Queue._checkJobAlreadyScheduled('every', null, done));
     });
 
 })
