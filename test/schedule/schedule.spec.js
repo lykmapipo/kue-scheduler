@@ -3,38 +3,40 @@
 //dependencies
 var expect = require('chai').expect;
 var path = require('path');
-var kue = require('kue');
 var moment = require('moment');
 var kue = require(path.join(__dirname, '..', '..', 'index'));
 var faker = require('faker');
 var Queue;
 
-describe('Queue#schedule', function() {
+describe('Queue#schedule', function () {
 
-    before(function(done) {
+    before(function (done) {
         Queue = kue.createQueue();
-        done();
+        var redis = kue.redis.createClient();
+        redis.send_command('FLUSHALL', [], function () {
+            done();
+        });
     });
 
-    after(function(done) {
+    after(function (done) {
         Queue.shutdown(done);
     });
 
-    it('should be a function', function(done) {
+    it('should be a function', function (done) {
         expect(Queue.schedule).to.be.a('function');
         done();
     });
 
-    it('should be able to parse date.js valid string', function(done) {
+    it('should be able to parse date.js valid string', function (done) {
         var tenMinutesFromNow = moment().add(10, 'minutes').toDate();
         Queue
-            ._parse('10 minutes from now', function(error, date) {
+            ._parse('10 minutes from now', function (error, date) {
                 expect(date.getMinutes()).to.eql(tenMinutesFromNow.getMinutes());
                 done(error, date);
             });
     });
 
-    it('should be able to schedule a job to run after 2 seconds from now', function(done) {
+    it('should be able to schedule a job to run after 2 seconds from now', function (done) {
         var data = {
             to: faker.internet.email()
         };
@@ -44,7 +46,7 @@ describe('Queue#schedule', function() {
             type: 'fixed'
         };
 
-        Queue.process('schedule', function(job, finalize) {
+        Queue.process('schedule', function (job, finalize) {
             /*jshint camelcase:false */
             expect(job.id).to.exist;
             expect(job.type).to.equal('schedule');
@@ -60,7 +62,7 @@ describe('Queue#schedule', function() {
         });
 
         //listen on success scheduling
-        Queue.on('schedule success', function(job) {
+        Queue.on('schedule success', function (job) {
             if (job.type === 'schedule') {
 
                 /*jshint camelcase:false */
@@ -74,6 +76,12 @@ describe('Queue#schedule', function() {
                 expect(parseInt(job._priority)).to.equal(0);
                 /*jshint camelcase:true */
             }
+
+            Queue._checkJobAlreadyDelayed('schedule', null, function () {
+                setTimeout(function () {
+                    done();
+                }, 9000);
+            });
         });
 
         /**
@@ -87,12 +95,7 @@ describe('Queue#schedule', function() {
             .backoff(backoff)
             .priority('normal');
 
-        Queue.schedule('2 seconds from now', job);
-
-
-        setTimeout(function() {
-            done();
-        }, 4000);
+        Queue.schedule('8 seconds from now', job);
     });
 
 });

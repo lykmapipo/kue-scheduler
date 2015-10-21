@@ -7,23 +7,23 @@ var kue = require(path.join(__dirname, '..', '..', 'index'));
 var faker = require('faker');
 var Queue;
 
-describe('Queue#every', function() {
+describe('Queue#every', function () {
 
-    before(function(done) {
+    before(function (done) {
         Queue = kue.createQueue();
         done();
     });
 
-    after(function(done) {
+    after(function (done) {
         Queue.shutdown(done);
     });
 
-    it('should be a function', function(done) {
+    it('should be a function', function (done) {
         expect(Queue.every).to.be.a('function');
         done();
     });
 
-    it('should be able to schedule a job to run every 2 seconds from now', function(done) {
+    it('should be able to schedule a job to run every 2 seconds from now', function (done) {
 
         var data = {
             to: faker.internet.email()
@@ -35,7 +35,7 @@ describe('Queue#every', function() {
         };
         var runCount = 0;
 
-        Queue.process('every', function(job, finalize) {
+        Queue.process('every', function (job, finalize) {
             //increament run counts
             runCount++;
 
@@ -54,7 +54,7 @@ describe('Queue#every', function() {
         });
 
         //listen on success scheduling
-        Queue.on('schedule success', function(job) {
+        Queue.on('schedule success', function (job) {
             if (job.type === 'every') {
                 /*jshint camelcase:false */
                 expect(job.id).to.exist;
@@ -77,11 +77,16 @@ describe('Queue#every', function() {
 
         Queue.every('2 seconds', job);
 
-        //wait for two jobs to be runned
-        setTimeout(function() {
+        //wait for two job to be runned
+        setTimeout(function () {
             expect(runCount).to.equal(2);
             done();
         }, 6000);
     });
 
-});
+    it('should be able to check the job is already scheduled to run every 2 seconds from now', function (done) {
+        Queue._checkJobAlreadyScheduled('every', null, done);
+    });
+
+})
+;
