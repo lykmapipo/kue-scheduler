@@ -487,9 +487,11 @@ Queue.prototype.every = function(interval, job) {
             jobExpiryKey: function(next) {
                 next(null, self._getJobExpiryKey(jobUUID));
             },
+          
             jobDataKey: function(next) {
                 next(null, self._getJobDataKey(jobUUID));
             },
+          
             nextRunTime: function(next) {
                 self._computeNextRunTime(jobDefinition, next);
             }
@@ -500,10 +502,12 @@ Queue.prototype.every = function(interval, job) {
 
             async
             .waterfall([
+          
                 function saveJobData(next) {
                     //save job data
                     self._saveJobData(results.jobDataKey, jobDefinition, next);
                 },
+          
                 function setJobKeyExpiry(jobData, next) {
                     //save key an wait for it to expiry
                     self._scheduler.set(results.jobExpiryKey, '', 'PX', delay, next);
@@ -529,6 +533,7 @@ Queue.prototype.every = function(interval, job) {
  *
  *              If an error occur, it will be emitted using `schedule error` key
  *              with error passed as first parameter on event.
+ *              
  *              If job schedule successfully, it will be emitted using
  *              `schedule success` key with job instance passed as a first parameter
  *              on event.
@@ -541,74 +546,93 @@ Queue.prototype.schedule = function(when, job) {
     //this refer to kue Queue instance context
     var self = this;
 
-    if (arguments.length !== 2) {
+    //back-off if no interval and job
+    if (!when || !job) {
         self.emit(
             'schedule error',
-            new Error('Invalid number of parameters. See API doc.')
+            new Error('Invalid number of parameters')
         );
     }
 
-    var jobDefinition = _.extend(job.toJSON(), {
-        backoff: job._backoff
-    });
+    //check for job instance
+    else if (!(job instanceof Job)) {
+        self.emit(
+            'schedule error',
+            new Error('Invalid job type')
+        );
+    }
 
-    async
-    .waterfall(
-        [
-            function computeDelay(next) {
-                //when is date instance
-                if (when instanceof Date) {
-                    next(null, when);
-                }
+    //continue with processing job
+    else {
 
-                //otherwise parse as date.js string
-                else {
-                    self._parse(when, next);
-                }
-            },
-            //set job delay
-            function setDelay(scheduledDate, next) {
-                next(
-                    null,
-                    _.merge(jobDefinition, {
-                        delay: scheduledDate,
-                        data: {
-                            schedule: 'ONCE'
-                        }
-                    })
-                );
-            },
-            function buildJob(delayedJobDefinition, next) {
-                self._buildJob(delayedJobDefinition, next);
-            },
-            function saveJob(job, validations, next) {
-                job.save(function(error) {
-                    if (error) {
-                        next(error);
-                    } else {
-                        next(null, job);
-                    }
-                });
-            }
-        ],
-        function finish(error, job) {
-            if (error) {
-                self.emit('schedule error', error);
-            } else {
-                self.emit('schedule success', job);
-            }
+        var jobDefinition = _.extend(job.toJSON(), {
+            backoff: job._backoff
         });
+
+        async
+        .waterfall(
+            [
+                function computeDelay(next) {
+                    //when is date instance
+                    if (when instanceof Date) {
+                        next(null, when);
+                    }
+
+                    //otherwise parse as date.js string
+                    else {
+                        self._parse(when, next);
+                    }
+                },
+                
+                //set job delay
+                function setDelay(scheduledDate, next) {
+                    next(
+                        null,
+                        _.merge(jobDefinition, {
+                            delay: scheduledDate,
+                            data: {
+                                schedule: 'ONCE'
+                            }
+                        })
+                    );
+                },
+                
+                function buildJob(delayedJobDefinition, next) {
+                    self._buildJob(delayedJobDefinition, next);
+                },
+                
+                function saveJob(job, validations, next) {
+                    job.save(function(error) {
+                        if (error) {
+                            next(error);
+                        } else {
+                            next(null, job);
+                        }
+                    });
+                }
+            ],
+            function finish(error, job) {
+                if (error) {
+                    self.emit('schedule error', error);
+                } else {
+                    self.emit('schedule success', job);
+                }
+            });
+    }
 };
 
 
 /**
  * @function
  * @description schedule a job to be executed immediatelly after being saved.
+ * 
  *              If an error occur, it will be emitted using `schedule error` key
  *              with error passed as first parameter on event.
+ *              
  *              If job schedule successfully, it will be emitted using
  *              `schedule success` key with job instance passed as a first parameter
  *              on event.
+ *              
  * @param  {Job}   job a valid kue job instance which has not been saved
  * @private
  */

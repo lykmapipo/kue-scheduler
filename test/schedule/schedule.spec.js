@@ -95,4 +95,32 @@ describe('Queue#schedule', function() {
         }, 4000);
     });
 
+    it('should be able to emit `schedule error` if schedule or job is not given', function(done) {
+
+        Queue.once('schedule error', function(error) {
+
+            expect(error.message).to.be.equal('Invalid number of parameters');
+
+            done();
+        });
+
+        Queue.schedule('2 seconds from now', undefined);
+
+    });
+
+    it('should be able to emit `schedule error` if job is not an instance of Job', function(done) {
+
+        Queue.once('schedule error', function(error) {
+
+            expect(error.message).to.be.equal('Invalid job type');
+
+            done();
+        });
+
+        Queue.schedule('2 seconds from now', {
+            name: faker.name.firstName()
+        });
+
+    });
+
 });
