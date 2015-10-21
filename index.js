@@ -487,11 +487,11 @@ Queue.prototype.every = function(interval, job) {
             jobExpiryKey: function(next) {
                 next(null, self._getJobExpiryKey(jobUUID));
             },
-          
+
             jobDataKey: function(next) {
                 next(null, self._getJobDataKey(jobUUID));
             },
-          
+
             nextRunTime: function(next) {
                 self._computeNextRunTime(jobDefinition, next);
             }
@@ -502,12 +502,12 @@ Queue.prototype.every = function(interval, job) {
 
             async
             .waterfall([
-          
+
                 function saveJobData(next) {
                     //save job data
                     self._saveJobData(results.jobDataKey, jobDefinition, next);
                 },
-          
+
                 function setJobKeyExpiry(jobData, next) {
                     //save key an wait for it to expiry
                     self._scheduler.set(results.jobExpiryKey, '', 'PX', delay, next);
@@ -583,7 +583,7 @@ Queue.prototype.schedule = function(when, job) {
                         self._parse(when, next);
                     }
                 },
-                
+
                 //set job delay
                 function setDelay(scheduledDate, next) {
                     next(
@@ -596,11 +596,11 @@ Queue.prototype.schedule = function(when, job) {
                         })
                     );
                 },
-                
+
                 function buildJob(delayedJobDefinition, next) {
                     self._buildJob(delayedJobDefinition, next);
                 },
-                
+
                 function saveJob(job, validations, next) {
                     job.save(function(error) {
                         if (error) {
@@ -640,37 +640,39 @@ Queue.prototype.now = function(job) {
     //this refer to kue Queue instance context
     var self = this;
 
-    if (arguments.length === 0 && !(job instanceof Job)) {
-        self.emit('schedule error', new Error('Invalid job. See API doc.'));
-    }
+    if (!job || !(job instanceof Job)) {
+        self.emit('schedule error', new Error('Invalid job type'));
+    } else {
 
-    var jobDefinition = _.extend(job.toJSON(), {
-        backoff: job._backoff
-    });
-
-    async
-    .waterfall(
-        [
-            function buildJob(next) {
-                self._buildJob(jobDefinition, next);
-            },
-            function saveJob(job, validations, next) {
-                job.save(function(error) {
-                    if (error) {
-                        next(error);
-                    } else {
-                        next(null, job);
-                    }
-                });
-            }
-        ],
-        function finish(error, job) {
-            if (error) {
-                self.emit('schedule error', error);
-            } else {
-                self.emit('schedule success', job);
-            }
+        var jobDefinition = _.extend(job.toJSON(), {
+            backoff: job._backoff
         });
+
+        async
+        .waterfall(
+            [
+                function buildJob(next) {
+                    self._buildJob(jobDefinition, next);
+                },
+
+                function saveJob(job, validations, next) {
+                    job.save(function(error) {
+                        if (error) {
+                            next(error);
+                        } else {
+                            next(null, job);
+                        }
+                    });
+                }
+            ],
+            function finish(error, job) {
+                if (error) {
+                    self.emit('schedule error', error);
+                } else {
+                    self.emit('schedule success', job);
+                }
+            });
+    }
 };
 
 

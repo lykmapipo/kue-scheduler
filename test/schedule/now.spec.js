@@ -76,4 +76,20 @@ describe('Queue#now', function() {
 
         Queue.now(job);
     });
+
+
+    it('should be able to emit `schedule error` if job is not an instance of Job', function(done) {
+
+        Queue.once('schedule error', function(error) {
+
+            expect(error.message).to.be.equal('Invalid job type');
+
+            done();
+        });
+
+        Queue.now({
+            name: faker.name.firstName()
+        });
+
+    });
 });
