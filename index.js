@@ -34,6 +34,7 @@ var CronTime = require('cron').CronTime;
  */
 Queue.prototype._getJobExpiryKey = function(uuid) {
     //this refer to kue Queue instance context
+
     return this.options.prefix + ':scheduler:' + uuid;
 };
 
@@ -46,7 +47,8 @@ Queue.prototype._getJobExpiryKey = function(uuid) {
  * @private
  */
 Queue.prototype._isJobExpiryKey = function(jobExpiryKey) {
-    //test if key provide is valid job expiry key 
+    //this refer to kue Queue instance context
+
     var isJobExpiryKey = this._jobExpiryKeyValidator.test(jobExpiryKey);
 
     return isJobExpiryKey;
@@ -61,6 +63,7 @@ Queue.prototype._isJobExpiryKey = function(jobExpiryKey) {
  */
 Queue.prototype._getJobUUID = function(jobExpiryKey) {
     //this refer to kue Queue instance context
+
     return jobExpiryKey.split(':')[2];
 };
 
@@ -73,6 +76,7 @@ Queue.prototype._getJobUUID = function(jobExpiryKey) {
  */
 Queue.prototype._getJobDataKey = function(uuid) {
     //this refer to kue Queue instance context
+
     return this.options.prefix + ':scheduler:data:' + uuid;
 };
 
@@ -120,10 +124,7 @@ Queue.prototype._readJobData = function(jobDataKey, done) {
 Queue.prototype.enableExpiryNotifications = function() {
     //this refer to Queue instance context
 
-    //enable 
-    //Keyevent events, published with __keyevent@<db>__ prefix
-    //
-    //Expired events (events generated every time a key expires)
+    //enable expired events (events generated every time a key expires)
     this._cli.config('SET', 'notify-keyspace-events', 'Ex');
 };
 
@@ -132,7 +133,6 @@ Queue.prototype.enableExpiryNotifications = function() {
  * @function
  * @description parse date.js valid string and return a date object
  * @param  {String}   str  a valid date.js date string
- * @param  {Date}   offset  a valid date which will be used as offset in datejs
  * @param  {Function} done a callback to invoke on error or success
  * @private
  */
@@ -258,6 +258,7 @@ Queue.prototype._buildJob = function(jobDefinition, done) {
  */
 Queue.prototype._computeNextRunTime = function(jobData, done) {
     //this refer to kue Queue instance context
+
     if (!jobData) {
         return done(new Error('Invalid job data'));
     }
@@ -334,6 +335,70 @@ Queue.prototype._computeNextRunTime = function(jobData, done) {
 
 
 /**
+ * @description respond to job expiry events
+ * @param  {String} jobExpiryKey valid job expiry key
+ */
+Queue.prototype._onKeyExpiry = function(jobExpiryKey) {
+    //this refer to kue Queue instance context
+    var self = this;
+
+    async
+    .waterfall(
+        [
+            //get job data
+            function getJobData(next) {
+                //get job uuid
+                var jobUUID = self._getJobUUID(jobExpiryKey);
+
+                //get saved job data
+                self._readJobData(self._getJobDataKey(jobUUID), next);
+            },
+            
+            //compute next run time
+            function computeNextRun(jobData, next) {
+                self
+                    ._computeNextRunTime(jobData, function(error, nextRunTime) {
+                        if (error) {
+                            next(error);
+                        } else {
+                            next(null, jobData, nextRunTime);
+                        }
+                    });
+            },
+
+            //resave the key to rerun this job again
+            function resaveJobKey(jobData, nextRunTime, next) {
+
+                //compute delay
+                var now = new Date();
+                var delay = nextRunTime.getTime() - now.getTime();
+
+                self
+                    ._scheduler
+                    .set(jobExpiryKey, '', 'PX', delay, function(error) {
+                        if (error) {
+                            next(error);
+                        } else {
+                            next(null, jobData);
+                        }
+                    });
+            },
+            function buildJob(jobDefinition, next) {
+                self._buildJob(jobDefinition, next);
+            }
+        ],
+        function(error, job) {
+            if (error) {
+                self.emit('schedule error', error);
+            } else {
+                //run job immediately
+                self.now(job);
+            }
+        });
+};
+
+
+/**
  * @function
  * @description subscribe to key expiry events
  * @private
@@ -354,57 +419,8 @@ Queue.prototype._subscribe = function() {
                 return;
             }
 
-            async
-            .waterfall(
-                [
-                    //get job data
-                    function getJobData(next) {
-                        //get job uuid
-                        var jobUUID = self._getJobUUID(jobExpiryKey);
+            self._onKeyExpiry(jobExpiryKey);
 
-                        //get saved job data
-                        self._readJobData(self._getJobDataKey(jobUUID), next);
-                    },
-                    //compute next run time
-                    function computeNextRun(jobData, next) {
-                        self
-                            ._computeNextRunTime(jobData, function(error, nextRunTime) {
-                                if (error) {
-                                    next(error);
-                                } else {
-                                    next(null, jobData, nextRunTime);
-                                }
-                            });
-                    },
-                    //resave the key to rerun this job again
-                    function resaveJobKey(jobData, nextRunTime, next) {
-
-                        //compute delay
-                        var now = new Date();
-                        var delay = nextRunTime.getTime() - now.getTime();
-
-                        self
-                            ._scheduler
-                            .set(jobExpiryKey, '', 'PX', delay, function(error) {
-                                if (error) {
-                                    next(error);
-                                } else {
-                                    next(null, jobData);
-                                }
-                            });
-                    },
-                    function buildJob(jobDefinition, next) {
-                        self._buildJob(jobDefinition, next);
-                    }
-                ],
-                function(error, job) {
-                    if (error) {
-                        self.emit('schedule error', error);
-                    } else {
-                        //run job immediately
-                        self.now(job);
-                    }
-                });
         });
 
     //subscribe to key expiration events
