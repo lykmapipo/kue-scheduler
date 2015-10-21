@@ -335,10 +335,10 @@ Queue.prototype._computeNextRunTime = function(jobData, done) {
 
 
 /**
- * @description respond to job expiry events
+ * @description respond to job key expiry events
  * @param  {String} jobExpiryKey valid job expiry key
  */
-Queue.prototype._onKeyExpiry = function(jobExpiryKey) {
+Queue.prototype._onJobKeyExpiry = function(jobExpiryKey) {
     //this refer to kue Queue instance context
     var self = this;
 
@@ -353,7 +353,7 @@ Queue.prototype._onKeyExpiry = function(jobExpiryKey) {
                 //get saved job data
                 self._readJobData(self._getJobDataKey(jobUUID), next);
             },
-            
+
             //compute next run time
             function computeNextRun(jobData, next) {
                 self
@@ -383,7 +383,7 @@ Queue.prototype._onKeyExpiry = function(jobExpiryKey) {
                         }
                     });
             },
-            
+
             function buildJob(jobDefinition, next) {
                 self._buildJob(jobDefinition, next);
             }
@@ -420,7 +420,7 @@ Queue.prototype._subscribe = function() {
                 return;
             }
 
-            self._onKeyExpiry(jobExpiryKey);
+            self._onJobKeyExpiry(jobExpiryKey);
 
         });
 
@@ -436,6 +436,7 @@ Queue.prototype._subscribe = function() {
  *
  *              If an error occur, it will be emitted using `schedule error` key
  *              with error passed as first parameter on event.
+ *              
  *              If job schedule successfully, it will be emitted using
  *              `schedule success` key with job instance passed as a first parameter
  *              on event.
@@ -449,59 +450,74 @@ Queue.prototype.every = function(interval, job) {
     //this refer to kue Queue instance context
     var self = this;
 
-    if (arguments.length !== 2) {
+    //back-off if no interval and job
+    if (!interval || !job) {
         self.emit(
             'schedule error',
-            new Error('Invalid number of parameters. See API doc.')
+            new Error('Invalid number of parameters')
         );
     }
 
-    //extend job definition with
-    //scheduling data
-    var jobDefinition = _.merge(job.toJSON(), {
-        reccurInterval: interval,
-        data: {
-            schedule: 'RECCUR'
-        },
-        backoff: job._backoff
-    });
+    //check for job instance
+    else if (!(job instanceof Job)) {
+        self.emit(
+            'schedule error',
+            new Error('Invalid job type')
+        );
+    }
 
-    //generate job uuid
-    var jobUUID = uuid.v1();
+    //continue with processing job
+    else {
 
-    async
-    .parallel({
-        jobExpiryKey: function(next) {
-            next(null, self._getJobExpiryKey(jobUUID));
-        },
-        jobDataKey: function(next) {
-            next(null, self._getJobDataKey(jobUUID));
-        },
-        nextRunTime: function(next) {
-            self._computeNextRunTime(jobDefinition, next);
-        }
-    }, function finish(error, results) {
-
-        var now = new Date();
-        var delay = results.nextRunTime.getTime() - now.getTime();
-
-        async
-        .waterfall([
-            function saveJobData(next) {
-                //save job data
-                self._saveJobData(results.jobDataKey, jobDefinition, next);
+        //extend job definition with
+        //scheduling data
+        var jobDefinition = _.merge(job.toJSON(), {
+            reccurInterval: interval,
+            data: {
+                schedule: 'RECCUR'
             },
-            function setJobKeyExpiry(jobData, next) {
-                //save key an wait for it to expiry
-                self._scheduler.set(results.jobExpiryKey, '', 'PX', delay, next);
-            }
-        ], function(error) {
-            if (error) {
-                self.emit('schedule error', error);
-            }
+            backoff: job._backoff
         });
 
-    });
+        //generate job uuid
+        var jobUUID = uuid.v1();
+
+        async
+        .parallel({
+            jobExpiryKey: function(next) {
+                next(null, self._getJobExpiryKey(jobUUID));
+            },
+            jobDataKey: function(next) {
+                next(null, self._getJobDataKey(jobUUID));
+            },
+            nextRunTime: function(next) {
+                self._computeNextRunTime(jobDefinition, next);
+            }
+        }, function finish(error, results) {
+
+            var now = new Date();
+            var delay = results.nextRunTime.getTime() - now.getTime();
+
+            async
+            .waterfall([
+                function saveJobData(next) {
+                    //save job data
+                    self._saveJobData(results.jobDataKey, jobDefinition, next);
+                },
+                function setJobKeyExpiry(jobData, next) {
+                    //save key an wait for it to expiry
+                    self._scheduler.set(results.jobExpiryKey, '', 'PX', delay, next);
+                }
+            ], function(error) {
+                if (error) {
+                    self.emit('schedule error', error);
+                }
+            });
+
+        });
+
+    }
+
 };
 
 
