@@ -383,6 +383,7 @@ Queue.prototype._onKeyExpiry = function(jobExpiryKey) {
                         }
                     });
             },
+            
             function buildJob(jobDefinition, next) {
                 self._buildJob(jobDefinition, next);
             }
