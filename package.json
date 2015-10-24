@@ -45,6 +45,7 @@
         "cron": "^1.0.9",
         "date.js": "^0.2.0",
         "human-interval": "^0.1.5",
+        "kue-unique": "^0.1.2",
         "node-uuid": "^1.4.3"
     },
     "devDependencies": {
