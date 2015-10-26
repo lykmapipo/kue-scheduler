@@ -545,6 +545,23 @@ Queue.prototype.every = function(interval, job) {
  *
  * @param  {Date|String}   when      when should this job run
  * @param  {Job}   jobDefinition valid kue job instance which has not been saved
+ * @example
+ *     1. create non-unique job
+ *     var job = Queue
+ *            .createJob('schedule', data)
+ *            .attempts(3)
+ *            .priority('normal');
+ *            
+ *      Queue.schedule('2 seconds from now', job);
+ *
+ *      2. create unique job
+ *      var job = Queue
+ *              .create('schedule', data)
+ *              .attempts(3)
+ *              .priority('normal')
+ *              .unique(<unique_key>);
+ *              
+ *      Queue.schedule('2 seconds from now', job);
  * @private
  */
 Queue.prototype.schedule = function(when, job) {
@@ -607,11 +624,11 @@ Queue.prototype.schedule = function(when, job) {
                 },
 
                 function saveJob(job, validations, next) {
-                    job.save(function(error) {
+                    job.save(function(error, existJob) {
                         if (error) {
                             next(error);
                         } else {
-                            next(null, job);
+                            next(null, existJob || job);
                         }
                     });
                 }
@@ -619,6 +636,8 @@ Queue.prototype.schedule = function(when, job) {
             function finish(error, job) {
                 if (error) {
                     self.emit('schedule error', error);
+                } else if (job.alreadyExist) {
+                    console.log(job.alreadyExist);
                 } else {
                     self.emit('schedule success', job);
                 }
@@ -691,6 +710,8 @@ Queue.prototype.now = function(job) {
                 //TODO fire already scheduled events
                 if (error) {
                     self.emit('schedule error', error);
+                } else if (job.alreadyExist) {
+                    self.emit('already scheduled', job);
                 } else {
                     self.emit('schedule success', job);
                 }

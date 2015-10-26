@@ -3,7 +3,6 @@
 //dependencies
 var expect = require('chai').expect;
 var path = require('path');
-var _ = require('lodash');
 var kue = require(path.join(__dirname, '..', '..', 'index'));
 var faker = require('faker');
 var Queue;
@@ -88,7 +87,8 @@ describe('Queue#now', function() {
             type: 'fixed'
         };
         var runCount = 0;
-        var jobs = [];
+        var processedJob;
+        var existJob;
 
 
         Queue.process('unique_now', function(job, finalize) {
@@ -114,7 +114,7 @@ describe('Queue#now', function() {
 
             if (job.type === 'unique_now') {
                 //collect jobs
-                jobs.push(job);
+                processedJob = job;
 
                 /*jshint camelcase:false */
                 expect(job.id).to.exist;
@@ -128,6 +128,27 @@ describe('Queue#now', function() {
                 /*jshint camelcase:true */
             }
         });
+
+        //listen for already scheduled jobs
+        Queue.on('already scheduled', function(job) {
+
+            if (job.type === 'unique_now') {
+
+                existJob = job;
+
+                /*jshint camelcase:false */
+                expect(job.id).to.exist;
+                expect(job.type).to.equal('unique_now');
+                expect(parseInt(job._max_attempts)).to.equal(3);
+                expect(job.data.to).to.equal(data.to);
+                expect(job.data.schedule).to.equal('NOW');
+
+                expect(job._backoff).to.eql(backoff);
+                expect(parseInt(job._priority)).to.equal(0);
+                /*jshint camelcase:true */
+            }
+        });
+
 
         var job = Queue
             .createJob('unique_now', data)
@@ -147,10 +168,9 @@ describe('Queue#now', function() {
 
         //wait for some seconds jobs to be runned
         setTimeout(function() {
-            expect(runCount).to.equal(1);
 
-            var ids = _.map(jobs, 'id');
-            expect(ids[0]).to.equal(ids[1]);
+            expect(runCount).to.equal(1);
+            expect(existJob.id).to.equal(processedJob.id);
 
             done();
         }, 3000);
