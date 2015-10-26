@@ -10,7 +10,7 @@
 
 
 //dependencies
-var kue = require('kue');
+var kue = require('kue-unique');
 var Job = kue.Job;
 var Queue = kue;
 //
@@ -497,26 +497,31 @@ Queue.prototype.every = function(interval, job) {
             }
         }, function finish(error, results) {
 
-            var now = new Date();
-            var delay = results.nextRunTime.getTime() - now.getTime();
+            if (error) {
+                self.emit('schedule error', error);
+            } else {
 
-            async
-            .waterfall([
+                var now = new Date();
+                var delay = results.nextRunTime.getTime() - now.getTime();
 
-                function saveJobData(next) {
-                    //save job data
-                    self._saveJobData(results.jobDataKey, jobDefinition, next);
-                },
+                async
+                .waterfall([
 
-                function setJobKeyExpiry(jobData, next) {
-                    //save key an wait for it to expiry
-                    self._scheduler.set(results.jobExpiryKey, '', 'PX', delay, next);
-                }
-            ], function(error) {
-                if (error) {
-                    self.emit('schedule error', error);
-                }
-            });
+                    function saveJobData(next) {
+                        //save job data
+                        self._saveJobData(results.jobDataKey, jobDefinition, next);
+                    },
+
+                    function setJobKeyExpiry(jobData, next) {
+                        //save key an wait for it to expiry
+                        self._scheduler.set(results.jobExpiryKey, '', 'PX', delay, next);
+                    }
+                ], function(error) {
+                    if (error) {
+                        self.emit('schedule error', error);
+                    }
+                });
+            }
 
         });
 
@@ -634,6 +639,23 @@ Queue.prototype.schedule = function(when, job) {
  *              on event.
  *              
  * @param  {Job}   job a valid kue job instance which has not been saved
+ * @example
+ *     1. create non-unique job
+ *     var job = Queue
+ *            .createJob('now', data)
+ *            .attempts(3)
+ *            .priority('normal');
+ *            
+ *      Queue.now(job);
+ *
+ *      2. create unique job
+ *      var job = Queue
+ *              .create('now', data)
+ *              .attempts(3)
+ *              .priority('normal')
+ *              .unique(<unique_key>);
+ *              
+ *      Queue.now(job);
  * @private
  */
 Queue.prototype.now = function(job) {
@@ -656,16 +678,17 @@ Queue.prototype.now = function(job) {
                 },
 
                 function saveJob(job, validations, next) {
-                    job.save(function(error) {
+                    job.save(function(error, existJob) {
                         if (error) {
                             next(error);
                         } else {
-                            next(null, job);
+                            next(null, existJob || job);
                         }
                     });
                 }
             ],
             function finish(error, job) {
+                //TODO fire already scheduled events
                 if (error) {
                     self.emit('schedule error', error);
                 } else {

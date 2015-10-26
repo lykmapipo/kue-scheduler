@@ -3,18 +3,19 @@
 //dependencies
 var expect = require('chai').expect;
 var path = require('path');
+var _ = require('lodash');
 var kue = require(path.join(__dirname, '..', '..', 'index'));
 var faker = require('faker');
 var Queue;
 
 describe('Queue#now', function() {
 
-    before(function(done) {
+    beforeEach(function(done) {
         Queue = kue.createQueue();
         done();
     });
 
-    after(function(done) {
+    afterEach(function(done) {
         Queue.shutdown(done);
     });
 
@@ -23,7 +24,7 @@ describe('Queue#now', function() {
         done();
     });
 
-    it('should be able to schedule a job to run now', function(done) {
+    it('should be able to schedule a non unique job to run now', function(done) {
         var data = {
             to: faker.internet.email()
         };
@@ -75,6 +76,84 @@ describe('Queue#now', function() {
             .priority('normal');
 
         Queue.now(job);
+    });
+
+    it('should be able to schedule a unique job to run now', function(done) {
+        var data = {
+            to: faker.internet.email()
+        };
+
+        var backoff = {
+            delay: 60000,
+            type: 'fixed'
+        };
+        var runCount = 0;
+        var jobs = [];
+
+
+        Queue.process('unique_now', function(job, finalize) {
+            //increament run counts
+            runCount++;
+
+            /*jshint camelcase:false */
+            expect(job.id).to.exist;
+            expect(job.type).to.equal('unique_now');
+            expect(parseInt(job._max_attempts)).to.equal(3);
+            expect(job.data.to).to.equal(data.to);
+            expect(job.data.schedule).to.equal('NOW');
+
+            expect(job._backoff).to.eql(backoff);
+            expect(parseInt(job._priority)).to.equal(0);
+            /*jshint camelcase:true */
+
+            finalize();
+        });
+
+        //listen on success scheduling
+        Queue.on('schedule success', function(job) {
+
+            if (job.type === 'unique_now') {
+                //collect jobs
+                jobs.push(job);
+
+                /*jshint camelcase:false */
+                expect(job.id).to.exist;
+                expect(job.type).to.equal('unique_now');
+                expect(parseInt(job._max_attempts)).to.equal(3);
+                expect(job.data.to).to.equal(data.to);
+                expect(job.data.schedule).to.equal('NOW');
+
+                expect(job._backoff).to.eql(backoff);
+                expect(parseInt(job._priority)).to.equal(0);
+                /*jshint camelcase:true */
+            }
+        });
+
+        var job = Queue
+            .createJob('unique_now', data)
+            .attempts(3)
+            .backoff(backoff)
+            .priority('normal')
+            .unique('mail_now');
+
+        //fire job at first
+        Queue.now(job);
+
+        //try fire it again
+        setTimeout(function() {
+            Queue.now(job);
+        }, 1000);
+
+
+        //wait for some seconds jobs to be runned
+        setTimeout(function() {
+            expect(runCount).to.equal(1);
+
+            var ids = _.map(jobs, 'id');
+            expect(ids[0]).to.equal(ids[1]);
+
+            done();
+        }, 3000);
     });
 
 
