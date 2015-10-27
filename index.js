@@ -59,7 +59,8 @@ Queue.prototype._isJobExpiryKey = function(jobExpiryKey) {
  * @description check if job exists and its ttl has not timeout
  * @param  {String}   jobExpiryKey valid job expiry key
  * @param  {Function} done         a function to invoke on success or error
- * @return {Boolean}               whether job exists or not
+ * @return {Boolean}               whether job already scheduled or not
+ * @private
  */
 Queue.prototype._isJobAlreadyScheduled = function(jobExpiryKey, done) {
     //this refer to kue Queue instance context
@@ -124,12 +125,9 @@ Queue.prototype._saveJobData = function(jobDataKey, jobData, done) {
 
     this
         ._scheduler
-        .set(
-            jobDataKey,
-            JSON.stringify(jobData),
-            function(error /*, response*/ ) {
-                done(error, jobData);
-            });
+        .set(jobDataKey, JSON.stringify(jobData), function(error /*, response*/ ) {
+            done(error, jobData);
+        });
 };
 
 
@@ -190,11 +188,8 @@ Queue.prototype._parse = function(str, done) {
  */
 Queue.prototype._buildJob = function(jobDefinition, done) {
     //this refer to kue Queue instance context
-    var self = this;
 
-
-    async
-    .parallel({
+    async.parallel({
             isDefined: function(next) {
                 //is job definition provided
                 var isObject = _.isPlainObject(jobDefinition);
@@ -243,10 +238,7 @@ Queue.prototype._buildJob = function(jobDefinition, done) {
 
                 //instantiate kue job
                 var job =
-                    self.createJob(
-                        jobDefinition.type,
-                        jobDefinition.data
-                    );
+                    this.createJob(jobDefinition.type, jobDefinition.data);
 
                 //apply all job attributes into kue job instance
                 _.keys(jobDefinition).forEach(function(attribute) {
@@ -279,7 +271,7 @@ Queue.prototype._buildJob = function(jobDefinition, done) {
                 //we are done
                 done(null, job, validations);
             }
-        });
+        }.bind(this));
 };
 
 
@@ -300,8 +292,7 @@ Queue.prototype._computeNextRunTime = function(jobData, done) {
     var interval = jobData.reccurInterval;
 
 
-    async
-    .parallel({
+    async.parallel({
         //compute next run from cron interval
         cron: function(after) {
             try {
@@ -373,23 +364,21 @@ Queue.prototype._computeNextRunTime = function(jobData, done) {
  */
 Queue.prototype._onJobKeyExpiry = function(jobExpiryKey) {
     //this refer to kue Queue instance context
-    var self = this;
 
-    async
-    .waterfall(
+    async.waterfall(
         [
             //get job data
             function getJobData(next) {
                 //get job uuid
-                var jobUUID = self._getJobUUID(jobExpiryKey);
+                var jobUUID = this._getJobUUID(jobExpiryKey);
 
                 //get saved job data
-                self._readJobData(self._getJobDataKey(jobUUID), next);
-            },
+                this._readJobData(this._getJobDataKey(jobUUID), next);
+            }.bind(this),
 
             //compute next run time
             function computeNextRun(jobData, next) {
-                self
+                this
                     ._computeNextRunTime(jobData, function(error, nextRunTime) {
                         if (error) {
                             next(error);
@@ -397,7 +386,7 @@ Queue.prototype._onJobKeyExpiry = function(jobExpiryKey) {
                             next(null, jobData, nextRunTime);
                         }
                     });
-            },
+            }.bind(this),
 
             //resave the key to rerun this job again
             function resaveJobKey(jobData, nextRunTime, next) {
@@ -406,7 +395,7 @@ Queue.prototype._onJobKeyExpiry = function(jobExpiryKey) {
                 var now = new Date();
                 var delay = nextRunTime.getTime() - now.getTime();
 
-                self
+                this
                     ._scheduler
                     .set(jobExpiryKey, '', 'PX', delay, function(error) {
                         if (error) {
@@ -415,20 +404,20 @@ Queue.prototype._onJobKeyExpiry = function(jobExpiryKey) {
                             next(null, jobData);
                         }
                     });
-            },
+            }.bind(this),
 
             function buildJob(jobDefinition, next) {
-                self._buildJob(jobDefinition, next);
-            }
+                this._buildJob(jobDefinition, next);
+            }.bind(this)
         ],
         function(error, job) {
             if (error) {
-                self.emit('schedule error', error);
+                this.emit('schedule error', error);
             } else {
                 //run job immediately
-                self.now(job);
+                this.now(job);
             }
-        });
+        }.bind(this));
 };
 
 
@@ -439,7 +428,6 @@ Queue.prototype._onJobKeyExpiry = function(jobExpiryKey) {
  */
 Queue.prototype._subscribe = function() {
     //this refer to kue Queue instance context
-    var self = this;
 
     //listen for job key expiry
     this
@@ -448,17 +436,17 @@ Queue.prototype._subscribe = function() {
 
             //test if the event key is job expiry key 
             //and emit `scheduler unknown job expiry key` if not
-            if (!self._isJobExpiryKey(jobExpiryKey)) {
-                self.emit('scheduler unknown job expiry key', jobExpiryKey);
+            if (!this._isJobExpiryKey(jobExpiryKey)) {
+                this.emit('scheduler unknown job expiry key', jobExpiryKey);
                 return;
             }
 
-            self._onJobKeyExpiry(jobExpiryKey);
+            this._onJobKeyExpiry(jobExpiryKey);
 
-        });
+        }.bind(this));
 
     //subscribe to key expiration events
-    self._listener.subscribe('__keyevent@0__:expired');
+    this._listener.subscribe('__keyevent@0__:expired');
 
 };
 
@@ -498,11 +486,10 @@ Queue.prototype._subscribe = function() {
  */
 Queue.prototype.every = function(interval, job) {
     //this refer to kue Queue instance context
-    var self = this;
 
     //back-off if no interval and job
     if (!interval || !job) {
-        self.emit(
+        this.emit(
             'schedule error',
             new Error('Invalid number of parameters')
         );
@@ -510,7 +497,7 @@ Queue.prototype.every = function(interval, job) {
 
     //check for job instance
     else if (!(job instanceof Job)) {
-        self.emit(
+        this.emit(
             'schedule error',
             new Error('Invalid job type')
         );
@@ -533,27 +520,29 @@ Queue.prototype.every = function(interval, job) {
         //generate job uuid
         var jobUUID = uuid.v1();
 
-        async
-        .parallel({
+        async.parallel({
+
             jobExists: function(next) {
-                var key = self._getJobExpiryKey(jobUUID);
-                self._isJobAlreadyScheduled(key, next);
-            },
+                var key = this._getJobExpiryKey(jobUUID);
+                this._isJobAlreadyScheduled(key, next);
+            }.bind(this),
+
             jobExpiryKey: function(next) {
-                next(null, self._getJobExpiryKey(jobUUID));
-            },
+                next(null, this._getJobExpiryKey(jobUUID));
+            }.bind(this),
 
             jobDataKey: function(next) {
-                next(null, self._getJobDataKey(jobUUID));
-            },
+                next(null, this._getJobDataKey(jobUUID));
+            }.bind(this),
 
             nextRunTime: function(next) {
-                self._computeNextRunTime(jobDefinition, next);
-            }
+                this._computeNextRunTime(jobDefinition, next);
+            }.bind(this)
+
         }, function finish(error, results) {
             console.log(results.jobExists);
             if (error) {
-                self.emit('schedule error', error);
+                this.emit('schedule error', error);
             } else {
 
                 var now = new Date();
@@ -564,21 +553,22 @@ Queue.prototype.every = function(interval, job) {
 
                     function saveJobData(next) {
                         //save job data
-                        self._saveJobData(results.jobDataKey, jobDefinition, next);
-                    },
+                        this._saveJobData(results.jobDataKey, jobDefinition, next);
+                    }.bind(this),
 
                     function setJobKeyExpiry(jobData, next) {
                         //save key an wait for it to expiry
-                        self._scheduler.set(results.jobExpiryKey, '', 'PX', delay, next);
-                    }
+                        this._scheduler.set(results.jobExpiryKey, '', 'PX', delay, next);
+                    }.bind(this)
+
                 ], function(error) {
                     if (error) {
-                        self.emit('schedule error', error);
+                        this.emit('schedule error', error);
                     }
-                });
+                }.bind(this));
             }
 
-        });
+        }.bind(this));
 
     }
 
@@ -621,11 +611,10 @@ Queue.prototype.every = function(interval, job) {
  */
 Queue.prototype.schedule = function(when, job) {
     //this refer to kue Queue instance context
-    var self = this;
 
     //back-off if no interval and job
     if (!when || !job) {
-        self.emit(
+        this.emit(
             'schedule error',
             new Error('Invalid number of parameters')
         );
@@ -633,7 +622,7 @@ Queue.prototype.schedule = function(when, job) {
 
     //check for job instance
     else if (!(job instanceof Job)) {
-        self.emit(
+        this.emit(
             'schedule error',
             new Error('Invalid job type')
         );
@@ -646,8 +635,7 @@ Queue.prototype.schedule = function(when, job) {
             backoff: job._backoff
         });
 
-        async
-        .waterfall(
+        async.waterfall(
             [
                 function computeDelay(next) {
                     //when is date instance
@@ -657,9 +645,9 @@ Queue.prototype.schedule = function(when, job) {
 
                     //otherwise parse as date.js string
                     else {
-                        self._parse(when, next);
+                        this._parse(when, next);
                     }
-                },
+                }.bind(this),
 
                 //set job delay
                 function setDelay(scheduledDate, next) {
@@ -675,8 +663,8 @@ Queue.prototype.schedule = function(when, job) {
                 },
 
                 function buildJob(delayedJobDefinition, next) {
-                    self._buildJob(delayedJobDefinition, next);
-                },
+                    this._buildJob(delayedJobDefinition, next);
+                }.bind(this),
 
                 function saveJob(job, validations, next) {
                     job.save(function(error, existJob) {
@@ -690,13 +678,13 @@ Queue.prototype.schedule = function(when, job) {
             ],
             function finish(error, job) {
                 if (error) {
-                    self.emit('schedule error', error);
+                    this.emit('schedule error', error);
                 } else if (job.alreadyExist) {
-                    self.emit('already scheduled', job);
+                    this.emit('already scheduled', job);
                 } else {
-                    self.emit('schedule success', job);
+                    this.emit('schedule success', job);
                 }
-            });
+            }.bind(this));
     }
 };
 
@@ -734,22 +722,20 @@ Queue.prototype.schedule = function(when, job) {
  */
 Queue.prototype.now = function(job) {
     //this refer to kue Queue instance context
-    var self = this;
 
     if (!job || !(job instanceof Job)) {
-        self.emit('schedule error', new Error('Invalid job type'));
+        this.emit('schedule error', new Error('Invalid job type'));
     } else {
 
         var jobDefinition = _.extend(job.toJSON(), {
             backoff: job._backoff
         });
 
-        async
-        .waterfall(
+        async.waterfall(
             [
                 function buildJob(next) {
-                    self._buildJob(jobDefinition, next);
-                },
+                    this._buildJob(jobDefinition, next);
+                }.bind(this),
 
                 function saveJob(job, validations, next) {
                     job.save(function(error, existJob) {
@@ -764,13 +750,13 @@ Queue.prototype.now = function(job) {
             function finish(error, job) {
                 //TODO fire already scheduled events
                 if (error) {
-                    self.emit('schedule error', error);
+                    this.emit('schedule error', error);
                 } else if (job.alreadyExist) {
-                    self.emit('already scheduled', job);
+                    this.emit('already scheduled', job);
                 } else {
-                    self.emit('schedule success', job);
+                    this.emit('schedule success', job);
                 }
-            });
+            }.bind(this));
     }
 };
 
