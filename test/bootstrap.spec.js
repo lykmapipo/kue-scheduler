@@ -18,13 +18,9 @@ function cleanup(callback) {
             if (error) {
                 callback(error);
             } else {
-                async
-                    .each(
-                        rows,
-                        function(row, next) {
-                            redis.del(row, next);
-                        },
-                        callback);
+                async.each(rows, function(row, next) {
+                    redis.del(row, next);
+                }, callback);
             }
         });
 }
