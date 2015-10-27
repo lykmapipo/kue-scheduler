@@ -637,7 +637,7 @@ Queue.prototype.schedule = function(when, job) {
                 if (error) {
                     self.emit('schedule error', error);
                 } else if (job.alreadyExist) {
-                    console.log(job.alreadyExist);
+                    self.emit('already scheduled', job);
                 } else {
                     self.emit('schedule success', job);
                 }
