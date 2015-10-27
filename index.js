@@ -90,6 +90,34 @@ Queue.prototype._isJobAlreadyScheduled = function(jobExpiryKey, done) {
 
 
 /**
+ * @description generate job uuid from job definition
+ * @param  {Object} jobDefinition valid job definition
+ * @return {String}               job uuid
+ * @private
+ */
+Queue.prototype._generateJobUUID = function(jobDefinition) {
+    var unique = jobDefinition.data ? jobDefinition.data.unique : undefined;
+    var type = jobDefinition.type ? jobDefinition.type : undefined;
+
+    //deduce job uuid from unique key
+    if (unique) {
+        return _.snakeCase(unique);
+    }
+
+    //deduce uuid from job type
+    else if (type) {
+        return _.snakeCase(type);
+    }
+
+    //otherwise generate uuid
+    else {
+        return uuid.v1();
+    }
+
+};
+
+
+/**
  * @function
  * @description generate job uuid from job expiry key
  * @return {String} a scheduled job uuid
@@ -408,14 +436,31 @@ Queue.prototype._onJobKeyExpiry = function(jobExpiryKey) {
 
             function buildJob(jobDefinition, next) {
                 this._buildJob(jobDefinition, next);
-            }.bind(this)
+            }.bind(this),
+
+            function runJob(job, validations, next) {
+                job.save(function(error, existJob) {
+                    if (error) {
+                        next(error);
+                    } else {
+                        //ensure unique job
+                        if (existJob && existJob.alreadyExist) {
+                            //inactivate to signal next run
+                            existJob.inactive();
+                        }
+
+                        next(null, existJob || job);
+                    }
+                });
+            }
         ],
         function(error, job) {
             if (error) {
                 this.emit('schedule error', error);
+            } else if (job.alreadyExist) {
+                this.emit('already scheduled', job);
             } else {
-                //run job immediately
-                this.now(job);
+                this.emit('schedule success', job);
             }
         }.bind(this));
 };
@@ -516,58 +561,60 @@ Queue.prototype.every = function(interval, job) {
             backoff: job._backoff
         });
 
-        //TODO use unique as job uuid if set
         //generate job uuid
-        var jobUUID = uuid.v1();
+        var jobUUID = this._generateJobUUID(jobDefinition);
 
-        async.parallel({
-
-            jobExists: function(next) {
-                var key = this._getJobExpiryKey(jobUUID);
-                this._isJobAlreadyScheduled(key, next);
-            }.bind(this),
-
-            jobExpiryKey: function(next) {
-                next(null, this._getJobExpiryKey(jobUUID));
-            }.bind(this),
-
-            jobDataKey: function(next) {
-                next(null, this._getJobDataKey(jobUUID));
-            }.bind(this),
-
-            nextRunTime: function(next) {
-                this._computeNextRunTime(jobDefinition, next);
-            }.bind(this)
-
-        }, function finish(error, results) {
-            console.log(results.jobExists);
+        //check if job already scheduled
+        this._isJobAlreadyScheduled(this._getJobExpiryKey(jobUUID), function(error, isAlreadyScheduled) {
             if (error) {
                 this.emit('schedule error', error);
-            } else {
-
-                var now = new Date();
-                var delay = results.nextRunTime.getTime() - now.getTime();
-
-                async
-                .waterfall([
-
-                    function saveJobData(next) {
-                        //save job data
-                        this._saveJobData(results.jobDataKey, jobDefinition, next);
-                    }.bind(this),
-
-                    function setJobKeyExpiry(jobData, next) {
-                        //save key an wait for it to expiry
-                        this._scheduler.set(results.jobExpiryKey, '', 'PX', delay, next);
-                    }.bind(this)
-
-                ], function(error) {
-                    if (error) {
-                        this.emit('schedule error', error);
-                    }
-                }.bind(this));
             }
 
+            if (!isAlreadyScheduled) {
+                async.parallel({
+
+                    jobExpiryKey: function(next) {
+                        next(null, this._getJobExpiryKey(jobUUID));
+                    }.bind(this),
+
+                    jobDataKey: function(next) {
+                        next(null, this._getJobDataKey(jobUUID));
+                    }.bind(this),
+
+                    nextRunTime: function(next) {
+                        this._computeNextRunTime(jobDefinition, next);
+                    }.bind(this)
+
+                }, function finish(error, results) {
+                    if (error) {
+                        this.emit('schedule error', error);
+                    } else {
+
+                        var now = new Date();
+                        var delay = results.nextRunTime.getTime() - now.getTime();
+
+                        async
+                        .waterfall([
+
+                            function saveJobData(next) {
+                                //save job data
+                                this._saveJobData(results.jobDataKey, jobDefinition, next);
+                            }.bind(this),
+
+                            function setJobKeyExpiry(jobData, next) {
+                                //save key an wait for it to expiry
+                                this._scheduler.set(results.jobExpiryKey, '', 'PX', delay, next);
+                            }.bind(this)
+
+                        ], function(error) {
+                            if (error) {
+                                this.emit('schedule error', error);
+                            }
+                        }.bind(this));
+                    }
+
+                }.bind(this));
+            }
         }.bind(this));
 
     }
