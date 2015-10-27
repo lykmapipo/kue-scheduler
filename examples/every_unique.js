@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * @description example of scheduling jobs to run once after specified interval
+ * @description example of scheduling a unique jobs to run every after specified interval
  */
 
 //dependencies
@@ -13,12 +13,13 @@ var Queue = kue.createQueue();
 
 
 //processing jobs
-Queue.process('schedule', function(job, done) {
+Queue.process('unique_every', function(job, done) {
     console.log('\nProcessing job with id %s at %s', job.id, new Date());
     done(null, {
         deliveredAt: new Date()
     });
 });
+
 
 //listen on scheduler errors
 Queue.on('schedule error', function(error) {
@@ -51,7 +52,7 @@ Queue.on('schedule success', function(job) {
 //prepare a job to perform
 //dont save it
 var job = Queue
-    .createJob('schedule', {
+    .createJob('unique_every', {
         to: 'any'
     })
     .attempts(3)
@@ -59,8 +60,9 @@ var job = Queue
         delay: 60000,
         type: 'fixed'
     })
-    .priority('normal');
+    .priority('normal')
+    .unique('unique_every');
 
 
 //schedule a job then
-Queue.schedule('2 seconds from now', job);
+Queue.every('2 seconds', job);
