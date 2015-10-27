@@ -96,6 +96,8 @@ Queue.prototype._isJobAlreadyScheduled = function(jobExpiryKey, done) {
  * @private
  */
 Queue.prototype._generateJobUUID = function(jobDefinition) {
+    //this refer to kue Queue instance context
+    
     var unique = jobDefinition.data ? jobDefinition.data.unique : undefined;
     var type = jobDefinition.type ? jobDefinition.type : undefined;
 
