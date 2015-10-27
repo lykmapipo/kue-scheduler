@@ -56,6 +56,39 @@ Queue.prototype._isJobExpiryKey = function(jobExpiryKey) {
 
 
 /**
+ * @description check if job exists and its ttl has not timeout
+ * @param  {String}   jobExpiryKey valid job expiry key
+ * @param  {Function} done         a function to invoke on success or error
+ * @return {Boolean}               whether job exists or not
+ */
+Queue.prototype._isJobAlreadyScheduled = function(jobExpiryKey, done) {
+    //this refer to kue Queue instance context
+
+    async.parallel({
+
+        exists: function isKeyExists(next) {
+            this._scheduler.exists(jobExpiryKey, next);
+        }.bind(this),
+
+        ttl: function isKeyExpired(next) {
+            this._scheduler.pttl(jobExpiryKey, next);
+        }.bind(this)
+
+    }, function(error, results) {
+        if (error) {
+            done(error);
+        } else {
+            var exists = (results.exists && results.exists === 1) ? true : false;
+            var active = (results.ttl && results.ttl > 0) ? true : false;
+
+            var alreadyScheduled = exists && active;
+            done(null, alreadyScheduled);
+        }
+    });
+};
+
+
+/**
  * @function
  * @description generate job uuid from job expiry key
  * @return {String} a scheduled job uuid
@@ -444,6 +477,23 @@ Queue.prototype._subscribe = function() {
  * @param  {String} interval      scheduled interval in either human interval or
  *                                cron format
  * @param  {Job} job valid kue job instance which has not been saved
+ * @example
+ *     1. create non-unique job
+ *     var job = Queue
+ *            .createJob('every', data)
+ *            .attempts(3)
+ *            .priority('normal');
+ *            
+ *      Queue.every('2 seconds', job);
+ *
+ *      2. create unique job
+ *      var job = Queue
+ *              .create('every', data)
+ *              .attempts(3)
+ *              .priority('normal')
+ *              .unique(<unique_key>);
+ *              
+ *      Queue.every('2 seconds', job);
  * @private
  */
 Queue.prototype.every = function(interval, job) {
@@ -479,11 +529,16 @@ Queue.prototype.every = function(interval, job) {
             backoff: job._backoff
         });
 
+        //TODO use unique as job uuid if set
         //generate job uuid
         var jobUUID = uuid.v1();
 
         async
         .parallel({
+            jobExists: function(next) {
+                var key = self._getJobExpiryKey(jobUUID);
+                self._isJobAlreadyScheduled(key, next);
+            },
             jobExpiryKey: function(next) {
                 next(null, self._getJobExpiryKey(jobUUID));
             },
@@ -496,7 +551,7 @@ Queue.prototype.every = function(interval, job) {
                 self._computeNextRunTime(jobDefinition, next);
             }
         }, function finish(error, results) {
-
+            console.log(results.jobExists);
             if (error) {
                 self.emit('schedule error', error);
             } else {
