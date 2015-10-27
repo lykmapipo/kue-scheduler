@@ -27,7 +27,8 @@ $ npm install --save async lodash kue kue-scheduler
 ## Usage
 
 
-### Schedule a job to run every after specified time interval
+### Schedule a non unique job to run every after specified time interval
+Use this if you want to maintain different(multiple) job instances on every run
 
 Example `schedule a job to run every two seconds from now`
 ```js
@@ -52,7 +53,35 @@ Queue.process('every', function(job, done) {
 });
 ```
 
-### Schedule a job to run only once after specified interval elapsed
+### Schedule a unique job to run every after specified time interval
+Use this if you want to maintain a single job instance on every run.
+
+Example `schedule a job to run every two seconds from now`
+```js
+var kue = require('kue-scheduler');
+var Queue = kue.createQueue();
+
+//create a job instance
+var job = Queue
+            .createJob('unique_every', data)
+            .attempts(3)
+            .backoff(backoff)
+            .priority('normal')
+            .unique('unique_every');
+
+//schedule it to run every 2 seconds
+Queue.every('2 seconds', job);
+
+
+//somewhere process your scheduled jobs
+Queue.process('unique_every', function(job, done) {
+    ...
+    done();
+});
+```
+
+### Schedule a non unique job to run only once after specified interval elapsed
+Use this if you want to maintain different(multiple) job instances on every run
 
 Example `schedule a job to run only once two seconds from now`
 ```js
@@ -72,6 +101,33 @@ Queue.schedule('2 seconds from now', job);
 
 //somewhere process your scheduled jobs
 Queue.process('shedule', function(job, done) {
+    ...
+    done();
+});
+```
+
+### Schedule a unique job to run only once after specified interval elapsed
+Use this if you want to maintain a single job instance on every run.
+
+Example `schedule a job to run only once two seconds from now`
+```js
+var kue = require('kue-scheduler');
+var Queue = kue.createQueue();
+
+//create a job instance
+var job = Queue
+            .createJob('unique_schedule', data)
+            .attempts(3)
+            .backoff(backoff)
+            .priority('normal')
+            .unique('unique_schedule');
+
+//schedule it to run once 2 seconds from now
+Queue.schedule('2 seconds from now', job);
+
+
+//somewhere process your scheduled jobs
+Queue.process('unique_shedule', function(job, done) {
     ...
     done();
 });
@@ -116,7 +172,7 @@ Queue.enableExpiryNotifications();
 ```
 
 ### `every(interval, job)`
-Runs a given `job instance` every after a given `interval`.
+Runs a given `job instance` every after a given `interval`. If `unique key` is provided only single instance job will exists otherwise on every run new job istance will be used.
 
 `interval` can either be a [human-interval](https://github.com/rschmukler/human-interval) `String` format or a [cron](https://github.com/ncb000gt/node-cron) `String` format.
 
@@ -144,7 +200,7 @@ Queue.process('every', function(job, done) {
 
 
 ### `schedule(when, job)`
-Schedules a given `job instance` to run once at a given time. `when` can either be a `Date instance` or a [date.js](https://github.com/matthewmueller/date) `String` such as `tomorrow at 5pm`.
+Schedules a given `job instance` to run once at a given time. `when` can either be a `Date instance` or a [date.js](https://github.com/matthewmueller/date) `String` such as `tomorrow at 5pm`. If `unique key` is provided only single instance job will exists otherwise on every run new job istance will be used.
 
 ```js
 var kue = require('kue-scheduler');
@@ -193,7 +249,7 @@ Queue.process('now', function(job, done) {
 ```
 
 ## Events
-Currently the only way to interact with `kue-scheduler` is through its events. `kue-scheduler` fires `schedule error`, `schedule success` and `scheduler unknown job expiry key` events.
+Currently the only way to interact with `kue-scheduler` is through its events. `kue-scheduler` fires `schedule error`, `schedule success`, `already scheduled` and `scheduler unknown job expiry key` events.
 
 ### `schedule error`
 Use it to interact with `kue-scheduler` to get notified when an error occur.
@@ -221,6 +277,26 @@ Use it to interact with `kue-scheduler` to obtained instance of current schedule
 ```js
 //listen on success scheduling
 Queue.on('schedule success', function(job) {
+    ...
+});
+
+var job = Queue
+    .createJob('now', data)
+    .attempts(3)
+    .backoff(backoff)
+    .priority('normal');
+
+Queue.now(job);
+```
+
+### `already scheduled`
+Use it to interact with `kue-scheduler` to be notified if the current instance of job is unique and already schedule to run.
+
+*Note: Use this event to attach instance level job events* 
+
+```js
+//listen alrady scheduled jobs
+Queue.on('already scheduled', function(job) {
     ...
 });
 
@@ -264,10 +340,10 @@ It will be nice, if you open an issue first so that we can know what is going on
 
 
 ## TODO
-- [ ] Scheduler restart after shutdown
-- [ ] Reschedule/scan jobs on restart
+- [x] Scheduler restart after shutdown
+- [x] Reschedule/scan jobs on restart
 - [ ] Test multi process scheduler
-- [ ] Support unique reccur jobs
+- [x] Support unique reccur jobs
 
 
 ## License 
