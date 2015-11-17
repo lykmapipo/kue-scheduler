@@ -6,7 +6,7 @@ A job scheduler utility for [kue](https://github.com/Automattic/kue), backed by 
 
 Scheduling API is heavily inspired and borrowed from [agenda](https://github.com/rschmukler/agenda) and others.
 
-*Note!: expiry key notification are now enabled by default, if provided kue options has a permission to do so*
+*Note!: expiry key notification are now enabled by default, if provided kue options has a permission to do so unless explicit disabled by passing `skipConfig` option when creating `kue` instance*
 
 ## Requirements
 - Redis 2.8.0 or higher.
@@ -340,11 +340,7 @@ It will be nice, if you open an issue first so that we can know what is going on
 
 
 ## TODO
-- [x] Scheduler restart after shutdown
-- [x] Reschedule/scan jobs on restart
 - [ ] Test multi process scheduler
-- [x] Support unique reccur jobs
-
 
 ## License 
 
