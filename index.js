@@ -835,7 +835,7 @@ Queue.prototype.shutdown = function( /*fn, timeout, type*/ ) {
     // _cli redis connctions
     this._listener.end();
     this._scheduler.end();
-    if(this._cli) {
+    if (this._cli) {
         this._cli.end();
     }
 
@@ -874,12 +874,12 @@ kue.createQueue = function(options) {
     queue._listener = redis.createClient();
 
     // If this was done manually
-    if(!options.skipConfig){
-      //redis client to allow configurations commands
-      queue._cli = redis.createClient();
+    if (!options.skipConfig) {
+        //redis client to allow configurations commands
+        queue._cli = redis.createClient();
 
-      //auto enable key expiry notifications
-      queue.enableExpiryNotifications();
+        //auto enable key expiry notifications
+        queue.enableExpiryNotifications();
     }
 
     //listen for job key expiry
