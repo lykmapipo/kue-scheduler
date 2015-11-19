@@ -97,7 +97,7 @@ Queue.prototype._isJobAlreadyScheduled = function(jobExpiryKey, done) {
  */
 Queue.prototype._generateJobUUID = function(jobDefinition) {
     //this refer to kue Queue instance context
-    
+
     var unique = jobDefinition.data ? jobDefinition.data.unique : undefined;
     var type = jobDefinition.type ? jobDefinition.type : undefined;
 
@@ -482,7 +482,7 @@ Queue.prototype._subscribe = function() {
         ._listener
         .on('message', function(channel, jobExpiryKey) {
 
-            //test if the event key is job expiry key 
+            //test if the event key is job expiry key
             //and emit `scheduler unknown job expiry key` if not
             if (!this._isJobExpiryKey(jobExpiryKey)) {
                 this.emit('scheduler unknown job expiry key', jobExpiryKey);
@@ -505,7 +505,7 @@ Queue.prototype._subscribe = function() {
  *
  *              If an error occur, it will be emitted using `schedule error` key
  *              with error passed as first parameter on event.
- *              
+ *
  *              If job schedule successfully, it will be emitted using
  *              `schedule success` key with job instance passed as a first parameter
  *              on event.
@@ -519,7 +519,7 @@ Queue.prototype._subscribe = function() {
  *            .createJob('every', data)
  *            .attempts(3)
  *            .priority('normal');
- *            
+ *
  *      Queue.every('2 seconds', job);
  *
  *      2. create unique job
@@ -528,7 +528,7 @@ Queue.prototype._subscribe = function() {
  *              .attempts(3)
  *              .priority('normal')
  *              .unique(<unique_key>);
- *              
+ *
  *      Queue.every('2 seconds', job);
  * @private
  */
@@ -633,7 +633,7 @@ Queue.prototype.every = function(interval, job) {
  *
  *              If an error occur, it will be emitted using `schedule error` key
  *              with error passed as first parameter on event.
- *              
+ *
  *              If job schedule successfully, it will be emitted using
  *              `schedule success` key with job instance passed as a first parameter
  *              on event.
@@ -646,7 +646,7 @@ Queue.prototype.every = function(interval, job) {
  *            .createJob('schedule', data)
  *            .attempts(3)
  *            .priority('normal');
- *            
+ *
  *      Queue.schedule('2 seconds from now', job);
  *
  *      2. create unique job
@@ -655,7 +655,7 @@ Queue.prototype.every = function(interval, job) {
  *              .attempts(3)
  *              .priority('normal')
  *              .unique(<unique_key>);
- *              
+ *
  *      Queue.schedule('2 seconds from now', job);
  * @private
  */
@@ -742,14 +742,14 @@ Queue.prototype.schedule = function(when, job) {
 /**
  * @function
  * @description schedule a job to be executed immediatelly after being saved.
- * 
+ *
  *              If an error occur, it will be emitted using `schedule error` key
  *              with error passed as first parameter on event.
- *              
+ *
  *              If job schedule successfully, it will be emitted using
  *              `schedule success` key with job instance passed as a first parameter
  *              on event.
- *              
+ *
  * @param  {Job}   job a valid kue job instance which has not been saved
  * @example
  *     1. create non-unique job
@@ -757,7 +757,7 @@ Queue.prototype.schedule = function(when, job) {
  *            .createJob('now', data)
  *            .attempts(3)
  *            .priority('normal');
- *            
+ *
  *      Queue.now(job);
  *
  *      2. create unique job
@@ -766,7 +766,7 @@ Queue.prototype.schedule = function(when, job) {
  *              .attempts(3)
  *              .priority('normal')
  *              .unique(<unique_key>);
- *              
+ *
  *      Queue.now(job);
  * @private
  */
@@ -847,6 +847,9 @@ Queue.prototype.shutdown = function( /*fn, timeout, type*/ ) {
 //and setup scheduler resources
 var createQueue = kue.createQueue;
 kue.createQueue = function(options) {
+    if(Queue.singleton){
+      return Queue.singleton;
+    }
     options = _.merge({
         prefix: 'q',
         redis: {
@@ -868,7 +871,7 @@ kue.createQueue = function(options) {
     //a redis client for scheduling key expiry
     queue._scheduler = redis.createClient();
 
-    //a redis client to listen for key expiry 
+    //a redis client to listen for key expiry
     queue._listener = redis.createClient();
 
     //redis client to allow configurations commands
