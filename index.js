@@ -849,6 +849,9 @@ Queue.prototype.shutdown = function( /*fn, timeout, type*/ ) {
 //and setup scheduler resources
 var createQueue = kue.createQueue;
 kue.createQueue = function(options) {
+    if(Queue.singleton){
+      return Queue.singleton;
+    }
     options = _.merge({
         prefix: 'q',
         redis: {
