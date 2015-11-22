@@ -251,9 +251,9 @@ Queue.process('now', function(job, done) {
 ```
 
 ### `remove([id|job|criteria], done)`
-Remove either scheduled with its expiry key and schdeule data or non-scheduled job. A criteria may contain `jobExpiryKey`, `jobDataKey` or `unique identifier` of the job in case of `unique jobs`
+Remove either scheduled job with its expiry key and schedule data or non-scheduled job. A criteria may contain `jobExpiryKey`, `jobDataKey` or `unique identifier` of the job in case of `unique jobs`
 
-#### Example: Remove `every` job
+#### Example: Remove `every` schedule job
 ```js
 //using instance
 Queue.remove(`<jobInstance>`, function(error, response) {
