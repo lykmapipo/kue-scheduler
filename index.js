@@ -264,7 +264,7 @@ Queue.prototype._buildJob = function(jobDefinition, done) {
                         schedule: 'NOW'
                     }
                 };
-                jobDefinition = _.merge(jobDefaults, jobDefinition);
+                jobDefinition = _.merge({}, jobDefaults, jobDefinition);
 
                 //instantiate kue job
                 var job =
@@ -272,17 +272,18 @@ Queue.prototype._buildJob = function(jobDefinition, done) {
 
                 //apply all job attributes into kue job instance
                 // except for `progress`
-                _.without(_.keys(jobDefinition), 'progress').forEach(function(attribute) {
-                    //if given job definition attribute
-                    //is one of job instance method
-                    //apply it
-                    var fn = job[attribute];
-                    var isFunction = !_.isUndefined(fn) && _.isFunction(fn);
+                _.without(_.keys(jobDefinition), 'progress')
+                    .forEach(function(attribute) {
+                        //if given job definition attribute
+                        //is one of job instance method
+                        //apply it
+                        var fn = job[attribute];
+                        var isFunction = !_.isUndefined(fn) && _.isFunction(fn);
 
-                    if (isFunction) {
-                        fn.call(job, jobDefinition[attribute]);
-                    }
-                });
+                        if (isFunction) {
+                            fn.call(job, jobDefinition[attribute]);
+                        }
+                    });
 
                 //re attach max attempts
                 //if we failed in above
@@ -556,7 +557,7 @@ Queue.prototype.every = function(interval, job) {
 
         //extend job definition with
         //scheduling data
-        var jobDefinition = _.merge(job.toJSON(), {
+        var jobDefinition = _.merge({}, job.toJSON(), {
             reccurInterval: interval,
             data: {
                 schedule: 'RECCUR'
@@ -703,7 +704,7 @@ Queue.prototype.schedule = function(when, job) {
                 function setDelay(scheduledDate, next) {
                     next(
                         null,
-                        _.merge(jobDefinition, {
+                        _.merge({}, jobDefinition, {
                             delay: scheduledDate,
                             data: {
                                 schedule: 'ONCE'
@@ -849,10 +850,14 @@ Queue.prototype.shutdown = function( /*fn, timeout, type*/ ) {
 //and setup scheduler resources
 var createQueue = kue.createQueue;
 kue.createQueue = function(options) {
-    if(Queue.singleton){
-      return Queue.singleton;
+
+    //ensure only one instance of kue exists
+    //per process
+    if (Queue.singleton) {
+        return Queue.singleton;
     }
-    options = _.merge({
+
+    options = _.merge({}, {
         prefix: 'q',
         redis: {
             port: 6379,
@@ -863,7 +868,7 @@ kue.createQueue = function(options) {
     //store passed options into Queue
     Queue.prototype.options = options;
 
-    //instatiare kue
+    //instatiate kue
     var queue = createQueue.call(kue, options);
 
     //create job expiry key RegEx validator

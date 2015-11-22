@@ -1,6 +1,8 @@
 # kue-scheduler
 
 [![Build Status](https://travis-ci.org/lykmapipo/kue-scheduler.svg?branch=master)](https://travis-ci.org/lykmapipo/kue-scheduler)
+[![Dependency Status](https://img.shields.io/david/lykmapipo/kue-scheduler.svg?style=flat)](https://david-dm.org/lykmapipo/kue-scheduler)
+[![npm version](https://badge.fury.io/js/kue-scheduler.svg)](https://badge.fury.io/js/kue-scheduler)
 
 A job scheduler utility for [kue](https://github.com/Automattic/kue), backed by [redis](http://redis.io) and built for [node.js](http://nodejs.org)
 
