@@ -115,14 +115,30 @@ Queue.prototype._generateJobUUID = function(jobDefinition) {
 
 /**
  * @function
- * @description generate job uuid from job expiry key
+ * @description generate job uuid from job expiry key or job data key
  * @return {String} a scheduled job uuid
  * @private
  */
-Queue.prototype._getJobUUID = function(jobExpiryKey) {
+Queue.prototype._getJobUUID = function(key) {
     //this refer to kue Queue instance context
+    var uuid;
 
-    return jobExpiryKey.split(':')[2];
+    var splits = key.split(':');
+
+    //deduce job uuid from job expiry key
+    //kue:scheduler:<jobExpirykey>
+    if (splits.length === 3) {
+        uuid = splits[2];
+    }
+
+    //deduce job uuid from job data key
+    //kue:scheduler:data:<jobExpirykey>
+    if (splits.length === 4) {
+        uuid = splits[3];
+    }
+
+    return uuid;
+
 };
 
 
@@ -958,27 +974,39 @@ Queue.prototype.remove = Queue.prototype.removeJob = function(criteria, done) {
 
         fromHashCriteria: function(next) {
             if (_.isPlainObject(criteria)) {
+                var uuid;
 
                 if (criteria.unique) {
-                    var uuid = this._generateJobUUID(criteria);
+                    uuid = this._generateJobUUID(criteria);
 
                     criteria.expiryKey = this._getJobExpiryKey(uuid);
-                    criteria.dataKey = this._getJobDataKey(criteria.expiryKey);
+                    criteria.dataKey = this._getJobDataKey(uuid);
 
                 } else {
 
-                    criteria.expiryKey = criteria.jobExpiryKey;
-                    criteria.dataKey = criteria.jobDataKey;
+                    criteria.expiryKey = criteria.jobExpiryKey || criteria.expiryKey;
+                    criteria.dataKey = criteria.jobDataKey || criteria.dataKey;
 
                 }
 
                 //normalize criteria
+                if (criteria.expiryKey && !criteria.dataKey) {
+                    uuid = this._getJobUUID(criteria.expiryKey);
+                    criteria.dataKey = this._getJobDataKey(uuid);
+                }
+
+                if (!criteria.expiryKey && criteria.dataKey) {
+                    uuid = this._getJobUUID(criteria.dataKey);
+                    criteria.expiryKey = this._getJobExpiryKey(uuid);
+                }
+
                 criteria = _.pick(criteria, ['expiryKey', 'dataKey']);
 
                 return next(null, {
                     job: null,
                     criteria: criteria
                 });
+
             } else {
                 return next(null, {
                     job: null,
@@ -1002,7 +1030,7 @@ Queue.prototype.remove = Queue.prototype.removeJob = function(criteria, done) {
         //remove job expiry key, data and its instance if exists
         async.parallel({
 
-            removeExpiryKey: function(next) {
+            removedExpiryKey: function(next) {
                 if (criteria.expiryKey) {
                     this._scheduler.del(criteria.expiryKey, next);
                 } else {
@@ -1010,7 +1038,7 @@ Queue.prototype.remove = Queue.prototype.removeJob = function(criteria, done) {
                 }
             }.bind(this),
 
-            removeJobData: function(next) {
+            removedJobData: function(next) {
                 if (criteria.dataKey) {
                     this._scheduler.del(criteria.dataKey, next);
                 } else {
@@ -1018,7 +1046,7 @@ Queue.prototype.remove = Queue.prototype.removeJob = function(criteria, done) {
                 }
             }.bind(this),
 
-            removeJobInstance: function(next) {
+            removedJobInstance: function(next) {
                 if (job) {
                     return job.remove(next);
                 } else {

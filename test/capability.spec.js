@@ -117,7 +117,8 @@ describe('Queue Scheduling Capabilities', function() {
                 .remove({
                     jobDataKey: jobDataKey
                 }, function(error, response) {
-                    expect(response.removeJobData).to.be.equal(1);
+                    console.log(response);
+                    expect(response.removedJobData).to.be.equal(1);
                     done(error, response);
                 });
         });
@@ -136,9 +137,9 @@ describe('Queue Scheduling Capabilities', function() {
                 },
                 function removeJob(job, next) {
                     Queue.remove(job, function(error, response) {
-                        expect(response.removeJobInstance).to.not.be.null;
-                        expect(response.removeJobInstance.type).to.be.equal('unique_every');
-                        expect(response.removeJobInstance.data.unique).to.be.equal('every_mail');
+                        expect(response.removedJobInstance).to.not.be.null;
+                        expect(response.removedJobInstance.type).to.be.equal('unique_every');
+                        expect(response.removedJobInstance.data.unique).to.be.equal('every_mail');
                         next(error, response);
                     });
                 }
