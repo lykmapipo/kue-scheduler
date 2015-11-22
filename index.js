@@ -598,6 +598,9 @@ Queue.prototype.every = function(interval, job) {
                                 //extend job definition with expiry key
                                 jobDefinition.data.expiryKey = results.jobExpiryKey;
 
+                                //extend job definition with data key
+                                jobDefinition.data.dataKey = results.jobDataKey;
+
                                 //save job data
                                 this._saveJobData(results.jobDataKey, jobDefinition, next);
 
@@ -895,6 +898,138 @@ kue.createQueue = function(options) {
 
     //return patched queue
     return queue;
+};
+
+
+/**
+ * @description remove existing job and its schedule
+ * @param  {Number|Job|Object}   criteria a job id, job instance or criteria
+ *                                        to be used
+ * @param  {Function} [done]   a callback to invoke on success or error  
+ */
+Queue.prototype.remove = Queue.prototype.removeJob = function(criteria, done) {
+    //normalize callback
+    done = done || function noop() {};
+
+    //compute criteria and job instance
+    async.parallel({
+
+        fromJobInstance: function(next) {
+            var isJobInstance = criteria && (criteria instanceof Job);
+
+            if (isJobInstance) {
+                var job = criteria;
+                var _criteria = _.pick(job.data, ['expiryKey', 'dataKey']);
+                return next(null, {
+                    job: job,
+                    criteria: _criteria
+                });
+
+            } else {
+                return next(null, {
+                    job: null,
+                    criteria: null
+                });
+            }
+        },
+
+        fromJobId: function(next) {
+            if (_.isNumber(criteria)) {
+
+                Job.get(criteria, function(error, job) {
+                    if (error) {
+                        return next(null, null, null);
+                    } else {
+                        var _criteria = _.pick(job.data, ['expiryKey', 'dataKey']);
+                        return next(null, {
+                            job: job,
+                            criteria: _criteria
+                        });
+                    }
+                });
+
+            } else {
+                return next(null, {
+                    job: null,
+                    criteria: null
+                });
+            }
+        },
+
+        fromHashCriteria: function(next) {
+            if (_.isPlainObject(criteria)) {
+
+                if (criteria.unique) {
+                    var uuid = this._generateJobUUID(criteria);
+
+                    criteria.expiryKey = this._getJobExpiryKey(uuid);
+                    criteria.dataKey = this._getJobDataKey(criteria.expiryKey);
+
+                } else {
+
+                    criteria.expiryKey = criteria.jobExpiryKey;
+                    criteria.dataKey = criteria.jobDataKey;
+
+                }
+
+                //normalize criteria
+                criteria = _.pick(criteria, ['expiryKey', 'dataKey']);
+
+                return next(null, {
+                    job: null,
+                    criteria: criteria
+                });
+            } else {
+                return next(null, {
+                    job: null,
+                    criteria: null
+                });
+            }
+        }.bind(this)
+
+    }, function finish(error, results) {
+        //obtain criteria
+        var criteria =
+            results.fromJobInstance.criteria ||
+            results.fromJobId.criteria ||
+            results.fromHashCriteria.criteria;
+
+        //obtain job instance
+        var job = results.fromJobInstance.job ||
+            results.fromJobId.job ||
+            results.fromHashCriteria.job;
+
+        //remove job expiry key, data and its instance if exists
+        async.parallel({
+
+            removeExpiryKey: function(next) {
+                if (criteria.expiryKey) {
+                    this._scheduler.del(criteria.expiryKey, next);
+                } else {
+                    next(null, null);
+                }
+            }.bind(this),
+
+            removeJobData: function(next) {
+                if (criteria.dataKey) {
+                    this._scheduler.del(criteria.dataKey, next);
+                } else {
+                    next(null, null);
+                }
+            }.bind(this),
+
+            removeJobInstance: function(next) {
+                if (job) {
+                    return job.remove(next);
+                } else {
+                    return next(null, null);
+                }
+            }
+        }, function finish(error, results) {
+            done(error, results);
+        }.bind(this));
+
+    }.bind(this));
 };
 
 

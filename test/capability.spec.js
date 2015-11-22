@@ -2,6 +2,7 @@
 
 //dependencies
 var expect = require('chai').expect;
+var async = require('async');
 var faker = require('faker');
 var path = require('path');
 var uuid = require('node-uuid');
@@ -109,6 +110,41 @@ describe('Queue Scheduling Capabilities', function() {
                     expect(_jobData.uuid).to.equal(jobData.uuid);
                     done(error, _jobData);
                 });
+        });
+
+        it('should be able to remove job data', function(done) {
+            Queue
+                .remove({
+                    jobDataKey: jobDataKey
+                }, function(error, response) {
+                    expect(response.removeJobData).to.be.equal(1);
+                    done(error, response);
+                });
+        });
+
+        it('should be able to remove job instance', function(done) {
+
+            async.waterfall([
+                function createJob(next) {
+                    Queue
+                        .createJob('unique_every', {
+                            to: faker.internet.email()
+                        })
+                        .attempts(3)
+                        .priority('normal')
+                        .unique('every_mail').save(next);
+                },
+                function removeJob(job, next) {
+                    Queue.remove(job, function(error, response) {
+                        expect(response.removeJobInstance).to.not.be.null;
+                        expect(response.removeJobInstance.type).to.be.equal('unique_every');
+                        expect(response.removeJobInstance.data.unique).to.be.equal('every_mail');
+                        next(error, response);
+                    });
+                }
+            ], done);
+
+
         });
 
     });
