@@ -250,6 +250,49 @@ Queue.process('now', function(job, done) {
 });
 ```
 
+### `remove([id|job|criteria], done)`
+Remove either scheduled with its expiry key and schdeule data or non-scheduled job. A criteria may contain `jobExpiryKey`, `jobDataKey` or `unique identifier` of the job in case of `unique jobs`
+
+#### Example: Remove `every` job
+```js
+//using instance
+Queue.remove(`<jobInstance>`, function(error, response) {
+    ...
+});
+
+//using id
+Queue.remove(`<jobId>`, function(error, response) {
+    ...
+});
+
+//using criteria
+Queue.remove({
+    unique: 'every_mail'
+}, function(error, response) {
+    ...
+});
+```
+
+#### Example: Remove `scheduled or now` job
+```js
+//using instance
+Queue.remove(`<jobInstance>`, function(error, response) {
+    ...
+});
+
+//using id
+Queue.remove(`<jobId>`, function(error, response) {
+    ...
+});
+
+//using criteria
+Queue.remove({
+    unique: 'every_mail'
+}, function(error, response) {
+    ...
+});
+```
+
 ## Events
 Currently the only way to interact with `kue-scheduler` is through its events. `kue-scheduler` fires `schedule error`, `schedule success`, `already scheduled` and `scheduler unknown job expiry key` events.
 

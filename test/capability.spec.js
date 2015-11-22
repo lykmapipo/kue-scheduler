@@ -117,7 +117,6 @@ describe('Queue Scheduling Capabilities', function() {
                 .remove({
                     jobDataKey: jobDataKey
                 }, function(error, response) {
-                    console.log(response);
                     expect(response.removedJobData).to.be.equal(1);
                     done(error, response);
                 });
