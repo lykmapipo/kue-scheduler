@@ -99,16 +99,10 @@ Queue.prototype._generateJobUUID = function(jobDefinition) {
     //this refer to kue Queue instance context
 
     var unique = jobDefinition.data ? jobDefinition.data.unique : undefined;
-    var type = jobDefinition.type ? jobDefinition.type : undefined;
 
     //deduce job uuid from unique key
     if (unique) {
         return _.snakeCase(unique);
-    }
-
-    //deduce uuid from job type
-    else if (type) {
-        return _.snakeCase(type);
     }
 
     //otherwise generate uuid
