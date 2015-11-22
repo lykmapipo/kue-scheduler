@@ -49,6 +49,7 @@ describe('Queue#every', function() {
             expect(parseInt(job._max_attempts)).to.equal(3);
             expect(job.data.to).to.equal(data.to);
             expect(job.data.schedule).to.equal('RECCUR');
+            expect(job.data.expiryKey).to.exist;
 
             expect(job._backoff).to.eql(backoff);
             expect(parseInt(job._priority)).to.equal(0);
@@ -66,6 +67,7 @@ describe('Queue#every', function() {
                 expect(parseInt(job._max_attempts)).to.equal(3);
                 expect(job.data.to).to.equal(data.to);
                 expect(job.data.schedule).to.equal('RECCUR');
+                expect(job.data.expiryKey).to.exist;
 
                 expect(job._backoff).to.eql(backoff);
                 expect(parseInt(job._priority)).to.equal(0);
@@ -116,6 +118,7 @@ describe('Queue#every', function() {
             expect(parseInt(job._max_attempts)).to.equal(3);
             expect(job.data.to).to.equal(data.to);
             expect(job.data.schedule).to.equal('RECCUR');
+            expect(job.data.expiryKey).to.equal('q:scheduler:every_mail');
 
             expect(job._backoff).to.eql(backoff);
             expect(parseInt(job._priority)).to.equal(0);
@@ -133,6 +136,7 @@ describe('Queue#every', function() {
                 expect(parseInt(job._max_attempts)).to.equal(3);
                 expect(job.data.to).to.equal(data.to);
                 expect(job.data.schedule).to.equal('RECCUR');
+                expect(job.data.expiryKey).to.equal('q:scheduler:every_mail');
 
                 expect(job._backoff).to.eql(backoff);
                 expect(parseInt(job._priority)).to.equal(0);

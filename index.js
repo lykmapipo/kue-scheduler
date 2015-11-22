@@ -595,13 +595,18 @@ Queue.prototype.every = function(interval, job) {
                         .waterfall([
 
                             function saveJobData(next) {
+                                //extend job definition with expiry key
+                                jobDefinition.data.expiryKey = results.jobExpiryKey;
+
                                 //save job data
                                 this._saveJobData(results.jobDataKey, jobDefinition, next);
+
                             }.bind(this),
 
                             function setJobKeyExpiry(jobData, next) {
                                 //save key an wait for it to expiry
                                 this._scheduler.set(results.jobExpiryKey, '', 'PX', delay, next);
+
                             }.bind(this)
 
                         ], function(error) {
