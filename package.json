@@ -57,7 +57,7 @@
         "node-uuid": "^1.4.7"
     },
     "peerDependencies": {
-        "kue": "^0.9.6"
+        "kue": "^0.10.3"
     },
     "devDependencies": {
         "async": "^1.4.2",
