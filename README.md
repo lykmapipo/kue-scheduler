@@ -366,6 +366,8 @@ Queue
     });
 ```
 
+##TODO
+- [ ] should be able to extend existing unique jobs with new job data
 
 ## Testing
 * Clone this repository

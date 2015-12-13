@@ -740,6 +740,12 @@ Queue.prototype.schedule = function(when, job) {
                         if (error) {
                             next(error);
                         } else {
+                            //ensure unique job
+                            if (existJob && existJob.alreadyExist) {
+                                //inactivate to signal next run
+                                existJob.inactive();
+                            }
+
                             next(null, existJob || job);
                         }
                     });
@@ -811,6 +817,12 @@ Queue.prototype.now = function(job) {
                         if (error) {
                             next(error);
                         } else {
+                            //ensure unique job
+                            if (existJob && existJob.alreadyExist) {
+                                //inactivate to signal next run
+                                existJob.inactive();
+                            }
+
                             next(null, existJob || job);
                         }
                     });
