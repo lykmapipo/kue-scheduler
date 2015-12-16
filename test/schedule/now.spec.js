@@ -89,11 +89,13 @@ describe('Queue#now', function() {
         var runCount = 0;
         var processedJob;
         var existJob;
+        var ids = [];
 
 
         Queue.process('unique_now', function(job, finalize) {
             //increament run counts
             runCount++;
+            ids.push(job.id);
 
             /*jshint camelcase:false */
             expect(job.id).to.exist;
@@ -169,10 +171,12 @@ describe('Queue#now', function() {
         //wait for some seconds jobs to be runned
         setTimeout(function() {
 
-            expect(runCount).to.equal(1);
+            expect(runCount).to.equal(2);
+            expect(ids[0]).to.be.equal(ids[1]);
             expect(existJob.id).to.equal(processedJob.id);
 
             done();
+
         }, 3000);
     });
 

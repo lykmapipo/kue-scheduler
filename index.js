@@ -99,16 +99,10 @@ Queue.prototype._generateJobUUID = function(jobDefinition) {
     //this refer to kue Queue instance context
 
     var unique = jobDefinition.data ? jobDefinition.data.unique : undefined;
-    var type = jobDefinition.type ? jobDefinition.type : undefined;
 
     //deduce job uuid from unique key
     if (unique) {
         return _.snakeCase(unique);
-    }
-
-    //deduce uuid from job type
-    else if (type) {
-        return _.snakeCase(type);
     }
 
     //otherwise generate uuid
@@ -121,14 +115,30 @@ Queue.prototype._generateJobUUID = function(jobDefinition) {
 
 /**
  * @function
- * @description generate job uuid from job expiry key
+ * @description generate job uuid from job expiry key or job data key
  * @return {String} a scheduled job uuid
  * @private
  */
-Queue.prototype._getJobUUID = function(jobExpiryKey) {
+Queue.prototype._getJobUUID = function(key) {
     //this refer to kue Queue instance context
+    var uuid;
 
-    return jobExpiryKey.split(':')[2];
+    var splits = key.split(':');
+
+    //deduce job uuid from job expiry key
+    //kue:scheduler:<jobExpirykey>
+    if (splits.length === 3) {
+        uuid = splits[2];
+    }
+
+    //deduce job uuid from job data key
+    //kue:scheduler:data:<jobExpirykey>
+    if (splits.length === 4) {
+        uuid = splits[3];
+    }
+
+    return uuid;
+
 };
 
 
@@ -264,7 +274,7 @@ Queue.prototype._buildJob = function(jobDefinition, done) {
                         schedule: 'NOW'
                     }
                 };
-                jobDefinition = _.merge(jobDefaults, jobDefinition);
+                jobDefinition = _.merge({}, jobDefaults, jobDefinition);
 
                 //instantiate kue job
                 var job =
@@ -272,17 +282,18 @@ Queue.prototype._buildJob = function(jobDefinition, done) {
 
                 //apply all job attributes into kue job instance
                 // except for `progress`
-                _.without(_.keys(jobDefinition), 'progress').forEach(function(attribute) {
-                    //if given job definition attribute
-                    //is one of job instance method
-                    //apply it
-                    var fn = job[attribute];
-                    var isFunction = !_.isUndefined(fn) && _.isFunction(fn);
+                _.without(_.keys(jobDefinition), 'progress')
+                    .forEach(function(attribute) {
+                        //if given job definition attribute
+                        //is one of job instance method
+                        //apply it
+                        var fn = job[attribute];
+                        var isFunction = !_.isUndefined(fn) && _.isFunction(fn);
 
-                    if (isFunction) {
-                        fn.call(job, jobDefinition[attribute]);
-                    }
-                });
+                        if (isFunction) {
+                            fn.call(job, jobDefinition[attribute]);
+                        }
+                    });
 
                 //re attach max attempts
                 //if we failed in above
@@ -556,7 +567,7 @@ Queue.prototype.every = function(interval, job) {
 
         //extend job definition with
         //scheduling data
-        var jobDefinition = _.merge(job.toJSON(), {
+        var jobDefinition = _.merge({}, job.toJSON(), {
             reccurInterval: interval,
             data: {
                 schedule: 'RECCUR'
@@ -600,13 +611,21 @@ Queue.prototype.every = function(interval, job) {
                         .waterfall([
 
                             function saveJobData(next) {
+                                //extend job definition with expiry key
+                                jobDefinition.data.expiryKey = results.jobExpiryKey;
+
+                                //extend job definition with data key
+                                jobDefinition.data.dataKey = results.jobDataKey;
+
                                 //save job data
                                 this._saveJobData(results.jobDataKey, jobDefinition, next);
+
                             }.bind(this),
 
                             function setJobKeyExpiry(jobData, next) {
                                 //save key an wait for it to expiry
                                 this._scheduler.set(results.jobExpiryKey, '', 'PX', delay, next);
+
                             }.bind(this)
 
                         ], function(error) {
@@ -703,7 +722,7 @@ Queue.prototype.schedule = function(when, job) {
                 function setDelay(scheduledDate, next) {
                     next(
                         null,
-                        _.merge(jobDefinition, {
+                        _.merge({}, jobDefinition, {
                             delay: scheduledDate,
                             data: {
                                 schedule: 'ONCE'
@@ -721,6 +740,12 @@ Queue.prototype.schedule = function(when, job) {
                         if (error) {
                             next(error);
                         } else {
+                            //ensure unique job
+                            if (existJob && existJob.alreadyExist) {
+                                //inactivate to signal next run
+                                existJob.inactive();
+                            }
+
                             next(null, existJob || job);
                         }
                     });
@@ -792,6 +817,12 @@ Queue.prototype.now = function(job) {
                         if (error) {
                             next(error);
                         } else {
+                            //ensure unique job
+                            if (existJob && existJob.alreadyExist) {
+                                //inactivate to signal next run
+                                existJob.inactive();
+                            }
+
                             next(null, existJob || job);
                         }
                     });
@@ -849,7 +880,14 @@ Queue.prototype.shutdown = function( /*fn, timeout, type*/ ) {
 //and setup scheduler resources
 var createQueue = kue.createQueue;
 kue.createQueue = function(options) {
-    options = _.merge({
+
+    //ensure only one instance of kue exists
+    //per process
+    if (Queue.singleton) {
+        return Queue.singleton;
+    }
+
+    options = _.merge({}, {
         prefix: 'q',
         redis: {
             port: 6379,
@@ -860,7 +898,7 @@ kue.createQueue = function(options) {
     //store passed options into Queue
     Queue.prototype.options = options;
 
-    //instatiare kue
+    //instatiate kue
     var queue = createQueue.call(kue, options);
 
     //create job expiry key RegEx validator
@@ -888,6 +926,150 @@ kue.createQueue = function(options) {
 
     //return patched queue
     return queue;
+};
+
+
+/**
+ * @description remove existing job and its schedule
+ * @param  {Number|Job|Object}   criteria a job id, job instance or criteria
+ *                                        to be used
+ * @param  {Function} [done]   a callback to invoke on success or error  
+ */
+Queue.prototype.remove = Queue.prototype.removeJob = function(criteria, done) {
+    //normalize callback
+    done = done || function noop() {};
+
+    //compute criteria and job instance
+    async.parallel({
+
+        fromJobInstance: function(next) {
+            var isJobInstance = criteria && (criteria instanceof Job);
+
+            if (isJobInstance) {
+                var job = criteria;
+                var _criteria = _.pick(job.data, ['expiryKey', 'dataKey']);
+                return next(null, {
+                    job: job,
+                    criteria: _criteria
+                });
+
+            } else {
+                return next(null, {
+                    job: null,
+                    criteria: null
+                });
+            }
+        },
+
+        fromJobId: function(next) {
+            if (_.isNumber(criteria)) {
+
+                Job.get(criteria, function(error, job) {
+                    if (error) {
+                        return next(null, null, null);
+                    } else {
+                        var _criteria = _.pick(job.data, ['expiryKey', 'dataKey']);
+                        return next(null, {
+                            job: job,
+                            criteria: _criteria
+                        });
+                    }
+                });
+
+            } else {
+                return next(null, {
+                    job: null,
+                    criteria: null
+                });
+            }
+        },
+
+        fromHashCriteria: function(next) {
+            if (_.isPlainObject(criteria)) {
+                var uuid;
+
+                if (criteria.unique) {
+                    uuid = this._generateJobUUID(criteria);
+
+                    criteria.expiryKey = this._getJobExpiryKey(uuid);
+                    criteria.dataKey = this._getJobDataKey(uuid);
+
+                } else {
+
+                    criteria.expiryKey = criteria.jobExpiryKey || criteria.expiryKey;
+                    criteria.dataKey = criteria.jobDataKey || criteria.dataKey;
+
+                }
+
+                //normalize criteria
+                if (criteria.expiryKey && !criteria.dataKey) {
+                    uuid = this._getJobUUID(criteria.expiryKey);
+                    criteria.dataKey = this._getJobDataKey(uuid);
+                }
+
+                if (!criteria.expiryKey && criteria.dataKey) {
+                    uuid = this._getJobUUID(criteria.dataKey);
+                    criteria.expiryKey = this._getJobExpiryKey(uuid);
+                }
+
+                criteria = _.pick(criteria, ['expiryKey', 'dataKey']);
+
+                return next(null, {
+                    job: null,
+                    criteria: criteria
+                });
+
+            } else {
+                return next(null, {
+                    job: null,
+                    criteria: null
+                });
+            }
+        }.bind(this)
+
+    }, function finish(error, results) {
+        //obtain criteria
+        var criteria =
+            results.fromJobInstance.criteria ||
+            results.fromJobId.criteria ||
+            results.fromHashCriteria.criteria;
+
+        //obtain job instance
+        var job = results.fromJobInstance.job ||
+            results.fromJobId.job ||
+            results.fromHashCriteria.job;
+
+        //remove job expiry key, data and its instance if exists
+        async.parallel({
+
+            removedExpiryKey: function(next) {
+                if (criteria.expiryKey) {
+                    this._scheduler.del(criteria.expiryKey, next);
+                } else {
+                    next(null, null);
+                }
+            }.bind(this),
+
+            removedJobData: function(next) {
+                if (criteria.dataKey) {
+                    this._scheduler.del(criteria.dataKey, next);
+                } else {
+                    next(null, null);
+                }
+            }.bind(this),
+
+            removedJobInstance: function(next) {
+                if (job) {
+                    return job.remove(next);
+                } else {
+                    return next(null, null);
+                }
+            }
+        }, function finish(error, results) {
+            done(error, results);
+        }.bind(this));
+
+    }.bind(this));
 };
 
 
