@@ -1,6 +1,8 @@
 # kue-scheduler
 
 [![Build Status](https://travis-ci.org/lykmapipo/kue-scheduler.svg?branch=master)](https://travis-ci.org/lykmapipo/kue-scheduler)
+[![Dependency Status](https://img.shields.io/david/lykmapipo/kue-scheduler.svg?style=flat)](https://david-dm.org/lykmapipo/kue-scheduler)
+[![npm version](https://badge.fury.io/js/kue-scheduler.svg)](https://badge.fury.io/js/kue-scheduler)
 
 A job scheduler utility for [kue](https://github.com/Automattic/kue), backed by [redis](http://redis.io) and built for [node.js](http://nodejs.org)
 
@@ -248,6 +250,49 @@ Queue.process('now', function(job, done) {
 });
 ```
 
+### `remove([id|job|criteria], done)`
+Remove either scheduled job with its expiry key and schedule data or non-scheduled job. A criteria may contain `jobExpiryKey`, `jobDataKey` or `unique identifier` of the job in case of `unique jobs`
+
+#### Example: Remove `every` schedule job
+```js
+//using instance
+Queue.remove(`<jobInstance>`, function(error, response) {
+    ...
+});
+
+//using id
+Queue.remove(`<jobId>`, function(error, response) {
+    ...
+});
+
+//using criteria
+Queue.remove({
+    unique: 'every_mail'
+}, function(error, response) {
+    ...
+});
+```
+
+#### Example: Remove `scheduled or now` job
+```js
+//using instance
+Queue.remove(`<jobInstance>`, function(error, response) {
+    ...
+});
+
+//using id
+Queue.remove(`<jobId>`, function(error, response) {
+    ...
+});
+
+//using criteria
+Queue.remove({
+    unique: 'every_mail'
+}, function(error, response) {
+    ...
+});
+```
+
 ## Events
 Currently the only way to interact with `kue-scheduler` is through its events. `kue-scheduler` fires `schedule error`, `schedule success`, `already scheduled` and `scheduler unknown job expiry key` events.
 
@@ -321,6 +366,8 @@ Queue
     });
 ```
 
+##TODO
+- [ ] should be able to extend existing unique jobs with new job data
 
 ## Testing
 * Clone this repository
@@ -337,10 +384,6 @@ $ npm test
 
 ## Contribute
 It will be nice, if you open an issue first so that we can know what is going on, then, fork this repo and push in your ideas. Do not forget to add a bit of test(s) of what value you adding.
-
-
-## TODO
-- [ ] Test multi process scheduler
 
 ## License 
 

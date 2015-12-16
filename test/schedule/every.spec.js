@@ -49,6 +49,8 @@ describe('Queue#every', function() {
             expect(parseInt(job._max_attempts)).to.equal(3);
             expect(job.data.to).to.equal(data.to);
             expect(job.data.schedule).to.equal('RECCUR');
+            expect(job.data.expiryKey).to.exist;
+            expect(job.data.dataKey).to.exist;
 
             expect(job._backoff).to.eql(backoff);
             expect(parseInt(job._priority)).to.equal(0);
@@ -66,6 +68,8 @@ describe('Queue#every', function() {
                 expect(parseInt(job._max_attempts)).to.equal(3);
                 expect(job.data.to).to.equal(data.to);
                 expect(job.data.schedule).to.equal('RECCUR');
+                expect(job.data.expiryKey).to.exist;
+                expect(job.data.dataKey).to.exist;
 
                 expect(job._backoff).to.eql(backoff);
                 expect(parseInt(job._priority)).to.equal(0);
@@ -116,6 +120,8 @@ describe('Queue#every', function() {
             expect(parseInt(job._max_attempts)).to.equal(3);
             expect(job.data.to).to.equal(data.to);
             expect(job.data.schedule).to.equal('RECCUR');
+            expect(job.data.expiryKey).to.equal('q:scheduler:every_mail');
+            expect(job.data.dataKey).to.equal('q:scheduler:data:every_mail');
 
             expect(job._backoff).to.eql(backoff);
             expect(parseInt(job._priority)).to.equal(0);
@@ -133,6 +139,8 @@ describe('Queue#every', function() {
                 expect(parseInt(job._max_attempts)).to.equal(3);
                 expect(job.data.to).to.equal(data.to);
                 expect(job.data.schedule).to.equal('RECCUR');
+                expect(job.data.expiryKey).to.equal('q:scheduler:every_mail');
+                expect(job.data.dataKey).to.equal('q:scheduler:data:every_mail');
 
                 expect(job._backoff).to.eql(backoff);
                 expect(parseInt(job._priority)).to.equal(0);
@@ -154,7 +162,90 @@ describe('Queue#every', function() {
             expect(runCount).to.equal(2);
             var ids = _.map(jobs, 'id');
             expect(ids[0]).to.equal(ids[1]);
-            done();
+            Queue.remove(job, done);
+        }, 6000);
+    });
+
+    it('should be able to remove scheduled unique job', function(done) {
+
+        var data = {
+            to: faker.internet.email()
+        };
+
+        var backoff = {
+            delay: 60000,
+            type: 'fixed'
+        };
+        var runCount = 0;
+        var jobs = [];
+
+        Queue.process('removed_every', function(job, finalize) {
+
+            //remove scheduled job after first run
+            if (runCount === 1) {
+                Queue.remove(job, function(error, response) {
+                    expect(error).to.not.exist;
+                    expect(response.removedExpiryKey).to.equal(1);
+                    expect(response.removedJobData).to.equal(1);
+                    expect(response.removedJobInstance).to.exist;
+                });
+
+                finalize();
+            } else {
+                jobs.push(job);
+
+                /*jshint camelcase:false */
+                expect(job.id).to.exist;
+                expect(job.type).to.equal('removed_every');
+                expect(parseInt(job._max_attempts)).to.equal(3);
+                expect(job.data.to).to.equal(data.to);
+                expect(job.data.schedule).to.equal('RECCUR');
+                expect(job.data.expiryKey).to.equal('q:scheduler:removed_email');
+                expect(job.data.dataKey).to.equal('q:scheduler:data:removed_email');
+
+                expect(job._backoff).to.eql(backoff);
+                expect(parseInt(job._priority)).to.equal(0);
+                /*jshint camelcase:true */
+
+                //increament run counts
+                runCount++;
+
+                finalize();
+            }
+        });
+
+        //listen on success scheduling
+        Queue.on('schedule success', function(job) {
+            if (job.type === 'removed_every') {
+                /*jshint camelcase:false */
+                expect(job.id).to.exist;
+                expect(job.type).to.equal('removed_every');
+                expect(parseInt(job._max_attempts)).to.equal(3);
+                expect(job.data.to).to.equal(data.to);
+                expect(job.data.schedule).to.equal('RECCUR');
+                expect(job.data.expiryKey).to.equal('q:scheduler:removed_email');
+                expect(job.data.dataKey).to.equal('q:scheduler:data:removed_email');
+
+                expect(job._backoff).to.eql(backoff);
+                expect(parseInt(job._priority)).to.equal(0);
+                /*jshint camelcase:true */
+            }
+        });
+
+        var job = Queue
+            .createJob('removed_every', data)
+            .attempts(3)
+            .backoff(backoff)
+            .priority('normal')
+            .unique('removed_email');
+
+        Queue.every('2 seconds', job);
+
+        //wait for two jobs to be runned
+        setTimeout(function() {
+            expect(runCount).to.equal(1);
+            expect(_.map(jobs, 'id')).to.have.length(1);
+            Queue.remove(job, done);
         }, 6000);
     });
 
