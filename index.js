@@ -989,7 +989,7 @@ Queue.prototype.remove = Queue.prototype.removeJob = function(criteria, done) {
                 var uuid;
 
                 if (criteria.unique) {
-                    uuid = this._generateJobUUID(criteria);
+                    uuid = this._generateJobUUID({data: criteria});
 
                     criteria.expiryKey = this._getJobExpiryKey(uuid);
                     criteria.dataKey = this._getJobDataKey(uuid);
