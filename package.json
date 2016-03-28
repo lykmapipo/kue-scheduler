@@ -46,6 +46,9 @@
     }, {
         "name": "risseraka",
         "github": "https://github.com/risseraka"
+    }, {
+        "name": "elyas-bhy",
+        "github": "https://github.com/elyas-bhy"
     }],
     "dependencies": {
         "async": "^1.5.0",
@@ -57,18 +60,16 @@
         "node-uuid": "^1.4.7"
     },
     "peerDependencies": {
-        "kue": "^0.9.6"
+        "kue": "^0.10.5"
     },
     "devDependencies": {
-        "async": "^1.4.2",
         "chai": "^3.4.1",
         "faker": "^3.0.1",
         "grunt": "^0.4.5",
         "grunt-contrib-jshint": "^0.11.3",
         "grunt-mocha-test": "^0.12.7",
         "jshint-stylish": "^2.1.0",
-        "kue": "^0.9.6",
-        "lodash": "^3.10.1",
+        "kue": "^0.10.5",
         "mocha": "^2.3.4",
         "moment": "^2.10.6"
     }

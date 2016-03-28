@@ -13,7 +13,7 @@ Scheduling API is heavily inspired and borrowed from [agenda](https://github.com
 ## Requirements
 - Redis 2.8.0 or higher.
 
-- [kue 0.9.3+](https://github.com/Automattic/kue)
+- [kue 0.10.5+](https://github.com/Automattic/kue)
 
 - If `kue-scheduler` failed to enable keyspace notification(s) automatic, then you have to enable them using `redis-cli` 
 ```sh
@@ -23,7 +23,7 @@ $ redis-cli config set notify-keyspace-events Ex
 
 ## Installation
 ```
-$ npm install --save async lodash kue kue-scheduler
+$ npm install --save kue kue-scheduler
 ```
 
 ## Usage
