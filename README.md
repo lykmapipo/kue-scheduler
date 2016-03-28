@@ -23,7 +23,7 @@ $ redis-cli config set notify-keyspace-events Ex
 
 ## Installation
 ```
-$ npm install --save async lodash kue kue-scheduler
+$ npm install --save kue kue-scheduler
 ```
 
 ## Usage
