@@ -162,7 +162,7 @@ describe('Queue#every', function() {
             expect(runCount).to.equal(2);
             var ids = _.map(jobs, 'id');
             expect(ids[0]).to.equal(ids[1]);
-            Queue.remove(job, done);
+            Queue.remove({ unique: 'every_mail' }, done);
         }, 6000);
     });
 
@@ -245,7 +245,7 @@ describe('Queue#every', function() {
         setTimeout(function() {
             expect(runCount).to.equal(1);
             expect(_.map(jobs, 'id')).to.have.length(1);
-            Queue.remove(job, done);
+            Queue.remove({ unique: 'removed_email' }, done);
         }, 6000);
     });
 
