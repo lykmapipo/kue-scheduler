@@ -1,6 +1,6 @@
 {
     "name": "kue-scheduler",
-    "version": "0.5.0",
+    "version": "0.5.1",
     "description": "A job scheduler utility for kue, backed by redis and built for node.js",
     "main": "index.js",
     "scripts": {
@@ -55,12 +55,10 @@
         "cron": "^1.0.9",
         "date.js": "^0.2.1",
         "human-interval": "^0.1.5",
+        "kue": "^0.11.0",
         "kue-unique": "^0.1.4",
         "lodash": "^3.10.1",
         "node-uuid": "^1.4.7"
-    },
-    "peerDependencies": {
-        "kue": "^0.10.5"
     },
     "devDependencies": {
         "chai": "^3.4.1",
@@ -69,7 +67,6 @@
         "grunt-contrib-jshint": "^0.11.3",
         "grunt-mocha-test": "^0.12.7",
         "jshint-stylish": "^2.1.0",
-        "kue": "^0.10.5",
         "mocha": "^2.3.4",
         "moment": "^2.10.6"
     }
