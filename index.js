@@ -376,7 +376,7 @@ Queue.prototype._computeNextRunTime = function(jobData, done) {
 
                 //return computed time
 
-                if (nextRun == 'Invalid Date'){
+                if ( isNaN( nextRun.getTime() ) ) {
                   nextRun = null;
                 }
                 after(null, nextRun);
