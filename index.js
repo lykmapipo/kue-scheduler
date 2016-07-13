@@ -428,83 +428,89 @@ Queue.prototype._onJobKeyExpiry = function(jobExpiryKey) {
     //this refer to kue Queue instance context
     var jobLockKey = this._getJobLockKey(this._getJobUUID(jobExpiryKey));
     this._redlock.lock(jobLockKey,1000,function(err,lock){
-      async.waterfall(
-          [
+      if(err){
 
-              //get job data
-              //
-              function getJobData(next) {
-                  //get job uuid
-                  var jobUUID = this._getJobUUID(jobExpiryKey);
+      }
+      else{
+        
+        async.waterfall(
+            [
 
-                  //get saved job data
-                  this._readJobData(this._getJobDataKey(jobUUID), next);
-              }.bind(this),
-              //compute next run time
-              function computeNextRun(jobData, next) {
-                  this
-                      ._computeNextRunTime(jobData, function(error, nextRunTime) {
-                          if (error) {
-                              next(error);
-                          } else {
-                              next(null, jobData, nextRunTime);
-                          }
-                      });
-              }.bind(this),
+                //get job data
+                //
+                function getJobData(next) {
+                    //get job uuid
+                    var jobUUID = this._getJobUUID(jobExpiryKey);
 
-              //resave the key to rerun this job again
-              function resaveJobKey(jobData, nextRunTime, next) {
+                    //get saved job data
+                    this._readJobData(this._getJobDataKey(jobUUID), next);
+                }.bind(this),
+                //compute next run time
+                function computeNextRun(jobData, next) {
+                    this
+                        ._computeNextRunTime(jobData, function(error, nextRunTime) {
+                            if (error) {
+                                next(error);
+                            } else {
+                                next(null, jobData, nextRunTime);
+                            }
+                        });
+                }.bind(this),
 
-                  //compute delay
-                  var now = new Date();
-                  var delay = nextRunTime.getTime() - now.getTime();
+                //resave the key to rerun this job again
+                function resaveJobKey(jobData, nextRunTime, next) {
 
-                  this
-                      ._scheduler
-                      .set(jobExpiryKey, '', 'PX', delay, function(error) {
-                          if (error) {
-                              next(error);
-                          } else {
-                              next(null, jobData);
-                          }
-                      });
-              }.bind(this),
+                    //compute delay
+                    var now = new Date();
+                    var delay = nextRunTime.getTime() - now.getTime();
 
-              function buildJob(jobDefinition, next) {
-                  this._buildJob(jobDefinition, next);
-              }.bind(this),
+                    this
+                        ._scheduler
+                        .set(jobExpiryKey, '', 'PX', delay, function(error) {
+                            if (error) {
+                                next(error);
+                            } else {
+                                next(null, jobData);
+                            }
+                        });
+                }.bind(this),
 
-              function runJob(job, validations, next) {
-                  job.save(function(error, existJob) {
-                      if (error) {
-                          next(error);
-                      } else {
-                          //ensure unique job
-                          if (existJob && existJob.alreadyExist) {
-                              //inactivate to signal next run
-                              existJob.inactive();
-                          }
+                function buildJob(jobDefinition, next) {
+                    this._buildJob(jobDefinition, next);
+                }.bind(this),
 
-                          next(null, existJob || job);
-                      }
-                  });
-              }
-          ],
-          function(error, job) {
-              lock.unlock(function(err){
-                if (err){
-                  // couldn't talk to redis to unlock the lock, which will release at the 1s ttl.
-                  console.log(err);
+                function runJob(job, validations, next) {
+                    job.save(function(error, existJob) {
+                        if (error) {
+                            next(error);
+                        } else {
+                            //ensure unique job
+                            if (existJob && existJob.alreadyExist) {
+                                //inactivate to signal next run
+                                existJob.inactive();
+                            }
+
+                            next(null, existJob || job);
+                        }
+                    });
                 }
-              });
-              if (error) {
-                  this.emit('schedule error', error);
-              } else if (job.alreadyExist) {
-                  this.emit('already scheduled', job);
-              } else {
-                  this.emit('schedule success', job);
-              }
-          }.bind(this));
+            ],
+            function(error, job) {
+                lock.unlock(function(err){
+                  if (err){
+                    // couldn't talk to redis to unlock the lock, which will release at the 1s ttl.
+                    console.log(err);
+                  }
+                });
+                if (error) {
+                    this.emit('schedule error', error);
+                } else if (job.alreadyExist) {
+                    this.emit('already scheduled', job);
+                } else {
+                    this.emit('schedule success', job);
+                }
+            }.bind(this));
+        }
 
       }.bind(this)); //end redlock
 };
@@ -620,60 +626,63 @@ Queue.prototype.every = function(interval, job) {
 
               this._redlock.lock(this._getJobLockKey(jobUUID), 1000, function(err,lock){
                 if (err){
-                  console.log(err);
+                  //console.log(err);
+                  //failed to get lock, this is ok.
                 }
-                async.parallel({
+                else {
+                  async.parallel({
 
-                    jobExpiryKey: function(next) {
-                        next(null, this._getJobExpiryKey(jobUUID));
-                    }.bind(this),
+                      jobExpiryKey: function(next) {
+                          next(null, this._getJobExpiryKey(jobUUID));
+                      }.bind(this),
 
-                    jobDataKey: function(next) {
-                        next(null, this._getJobDataKey(jobUUID));
-                    }.bind(this),
+                      jobDataKey: function(next) {
+                          next(null, this._getJobDataKey(jobUUID));
+                      }.bind(this),
 
-                    nextRunTime: function(next) {
-                        this._computeNextRunTime(jobDefinition, next);
-                    }.bind(this)
+                      nextRunTime: function(next) {
+                          this._computeNextRunTime(jobDefinition, next);
+                      }.bind(this)
 
-                }, function finish(error, results) {
-                    if (error) {
-                        this.emit('schedule error', error);
-                    } else {
+                  }, function finish(error, results) {
+                      if (error) {
+                          this.emit('schedule error', error);
+                      } else {
 
-                        var now = new Date();
-                        var delay = results.nextRunTime.getTime() - now.getTime();
+                          var now = new Date();
+                          var delay = results.nextRunTime.getTime() - now.getTime();
 
-                        async
-                        .waterfall([
+                          async
+                          .waterfall([
 
-                            function saveJobData(next) {
-                                //extend job definition with expiry key
-                                jobDefinition.data.expiryKey = results.jobExpiryKey;
+                              function saveJobData(next) {
+                                  //extend job definition with expiry key
+                                  jobDefinition.data.expiryKey = results.jobExpiryKey;
 
-                                //extend job definition with data key
-                                jobDefinition.data.dataKey = results.jobDataKey;
+                                  //extend job definition with data key
+                                  jobDefinition.data.dataKey = results.jobDataKey;
 
-                                //save job data
-                                this._saveJobData(results.jobDataKey, jobDefinition, next);
+                                  //save job data
+                                  this._saveJobData(results.jobDataKey, jobDefinition, next);
 
-                            }.bind(this),
+                              }.bind(this),
 
-                            function setJobKeyExpiry(jobData, next) {
-                                //save key an wait for it to expiry
-                                this._scheduler.set(results.jobExpiryKey, '', 'PX', delay, next);
+                              function setJobKeyExpiry(jobData, next) {
+                                  //save key an wait for it to expiry
+                                  this._scheduler.set(results.jobExpiryKey, '', 'PX', delay, next);
 
-                            }.bind(this)
+                              }.bind(this)
 
-                        ], function(error) {
-                            lock.unlock();
-                            if (error) {
-                                this.emit('schedule error', error);
-                            }
-                        }.bind(this));
-                    }
+                          ], function(error) {
+                              lock.unlock();
+                              if (error) {
+                                  this.emit('schedule error', error);
+                              }
+                          }.bind(this));
+                      }
 
-                }.bind(this));
+                  }.bind(this));
+              }
 
             }.bind(this));
             // end redlock.
