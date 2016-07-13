@@ -6,7 +6,28 @@ var _ = require('lodash');
 var path = require('path');
 var kue = require(path.join(__dirname, '..', '..', 'index'));
 var faker = require('faker');
+var async = require('async');
 var Queue;
+
+//TODO: Clean up the cleanup.
+
+//redis client for database cleanups
+var redis = kue.redis.createClientFactory({
+    redis: {}
+});
+
+function cleanup(callback) {
+    redis
+        .keys('q*', function(error, rows) {
+            if (error) {
+                callback(error);
+            } else {
+                async.each(rows, function(row, next) {
+                    redis.del(row, next);
+                }, callback);
+            }
+        });
+}
 
 describe('Queue#every', function() {
 
@@ -16,7 +37,9 @@ describe('Queue#every', function() {
     });
 
     afterEach(function(done) {
-        Queue.shutdown(done);
+        Queue.shutdown(function(){
+            cleanup(done);
+        });
     });
 
     it('should be a function', function(done) {
