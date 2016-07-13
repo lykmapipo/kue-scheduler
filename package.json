@@ -1,76 +1,84 @@
 {
-    "name": "kue-scheduler",
-    "version": "0.5.0",
-    "description": "A job scheduler utility for kue, backed by redis and built for node.js",
-    "main": "index.js",
-    "scripts": {
-        "test": "grunt test"
+  "name": "kue-scheduler",
+  "version": "0.5.0",
+  "description": "A job scheduler utility for kue, backed by redis and built for node.js",
+  "main": "index.js",
+  "scripts": {
+    "test": "grunt test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lykmapipo/kue-scheduler.git"
+  },
+  "keywords": [
+    "kue",
+    "queue",
+    "que",
+    "q",
+    "schedule",
+    "every",
+    "now",
+    "at",
+    "delayed",
+    "jobs",
+    "redis",
+    "job",
+    "worker"
+  ],
+  "author": "lykmapipo",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/lykmapipo/kue-scheduler/issues"
+  },
+  "homepage": "https://github.com/lykmapipo/kue-scheduler",
+  "contributors": [
+    {
+      "name": "lykmapipo",
+      "github": "https://github.com/lykmapipo"
     },
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/lykmapipo/kue-scheduler.git"
+    {
+      "name": "keenondrums",
+      "github": "https://github.com/keenondrums"
     },
-    "keywords": [
-        "kue",
-        "queue",
-        "que",
-        "q",
-        "schedule",
-        "every",
-        "now",
-        "at",
-        "delayed",
-        "jobs",
-        "redis",
-        "job",
-        "worker"
-    ],
-    "author": "lykmapipo",
-    "license": "MIT",
-    "bugs": {
-        "url": "https://github.com/lykmapipo/kue-scheduler/issues"
+    {
+      "name": "throrin19",
+      "github": "https://github.com/throrin19"
     },
-    "homepage": "https://github.com/lykmapipo/kue-scheduler",
-    "contributors": [{
-        "name": "lykmapipo",
-        "github": "https://github.com/lykmapipo"
-    }, {
-        "name": "keenondrums",
-        "github": "https://github.com/keenondrums"
-    }, {
-        "name": "throrin19",
-        "github": "https://github.com/throrin19"
-    }, {
-        "name": "KeKs0r",
-        "github": "https://github.com/KeKs0r"
-    }, {
-        "name": "risseraka",
-        "github": "https://github.com/risseraka"
-    }, {
-        "name": "elyas-bhy",
-        "github": "https://github.com/elyas-bhy"
-    }],
-    "dependencies": {
-        "async": "^1.5.0",
-        "cron": "^1.0.9",
-        "date.js": "^0.2.1",
-        "human-interval": "^0.1.5",
-        "kue-unique": "^0.1.4",
-        "lodash": "^3.10.1",
-        "node-uuid": "^1.4.7"
+    {
+      "name": "KeKs0r",
+      "github": "https://github.com/KeKs0r"
     },
-    "peerDependencies": {
-        "kue": "^0.10.5"
+    {
+      "name": "risseraka",
+      "github": "https://github.com/risseraka"
     },
-    "devDependencies": {
-        "chai": "^3.4.1",
-        "faker": "^3.0.1",
-        "grunt": "^0.4.5",
-        "grunt-contrib-jshint": "^0.11.3",
-        "grunt-mocha-test": "^0.12.7",
-        "jshint-stylish": "^2.1.0",
-        "kue": "^0.10.5",
-        "mocha": "^2.3.4",
-        "moment": "^2.10.6"
+    {
+      "name": "elyas-bhy",
+      "github": "https://github.com/elyas-bhy"
     }
+  ],
+  "dependencies": {
+    "async": "^1.5.0",
+    "cron": "^1.0.9",
+    "date.js": "^0.2.1",
+    "human-interval": "^0.1.5",
+    "kue-unique": "^1.0.0",
+    "lodash": "^3.10.1",
+    "node-uuid": "^1.4.7",
+    "redlock": "^2.0.0"
+  },
+  "peerDependencies": {
+    "kue": "^0.10.5"
+  },
+  "devDependencies": {
+    "chai": "^3.4.1",
+    "faker": "^3.0.1",
+    "grunt": "^0.4.5",
+    "grunt-contrib-jshint": "^0.11.3",
+    "grunt-mocha-test": "^0.12.7",
+    "jshint-stylish": "^2.1.0",
+    "kue": "^0.10.5",
+    "mocha": "^2.3.4",
+    "moment": "^2.10.6"
+  }
 }
