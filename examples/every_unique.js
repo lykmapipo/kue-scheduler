@@ -30,7 +30,7 @@ Queue.on('schedule error', function(error) {
 
 //listen on success scheduling
 Queue.on('schedule success', function(job) {
-    //a highly recommended place to attach 
+    //a highly recommended place to attach
     //job instance level events listeners
 
     job.on('complete', function(result) {
@@ -48,6 +48,15 @@ Queue.on('schedule success', function(job) {
     });
 
 });
+Queue.on('already scheduled', function(job){
+  console.log('job already scheduled' + job.id);
+});
+
+/*Queue.on('job complete', function(id, result){
+  console.log('Job completed with data ', result);
+
+});*/
+
 
 //prepare a job to perform
 //dont save it

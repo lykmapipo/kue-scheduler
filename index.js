@@ -432,7 +432,7 @@ Queue.prototype._onJobKeyExpiry = function(jobExpiryKey) {
 
       }
       else{
-        
+
         async.waterfall(
             [
 
@@ -487,10 +487,23 @@ Queue.prototype._onJobKeyExpiry = function(jobExpiryKey) {
                             //ensure unique job
                             if (existJob && existJob.alreadyExist) {
                                 //inactivate to signal next run
-                                existJob.inactive();
+                                if(existJob.state() !== 'complete' || existJob.state() !== 'failed'){
+                                  //unset the unique mapping for this.
+                                  //existJob.inactive();
+                                  kue.Job.removeUniqueJobData(existJob.id,function(err,deletedJobData){
+                                  //resave initial job, which should set new unique constraint.
+                                    job.save(function(error,newJob){
+                                          return next(null, newJob);
+                                    });
+                                  });
+                                }
+                                else{
+                                  return next(null, existJob || job);
+                                }
                             }
-
-                            next(null, existJob || job);
+                            else{
+                                return next(null, existJob || job);
+                            }
                         }
                     });
                 }
@@ -793,10 +806,24 @@ Queue.prototype.schedule = function(when, job) {
                             //ensure unique job
                             if (existJob && existJob.alreadyExist) {
                                 //inactivate to signal next run
-                                existJob.inactive();
+                                if(existJob.state() !== 'complete' || existJob.state() !== 'failed'){
+                                  //unset the unique mapping for this.
+                                  //existJob.inactive();
+                                  kue.Job.removeUniqueJobData(existJob.id,function(err,deletedJobData){
+                                  //resave initial job, which should set new unique constraint.
+                                    job.save(function(error,newJob){
+                                      return next(null, newJob);
+                                    });
+                                  });
+                                }
+                                else{
+                                  return next(null, existJob || job);
+                                }
+                            }
+                            else{
+                                return next(null, existJob || job);
                             }
 
-                            next(null, existJob || job);
                         }
                     });
                 }
@@ -870,10 +897,23 @@ Queue.prototype.now = function(job) {
                             //ensure unique job
                             if (existJob && existJob.alreadyExist) {
                                 //inactivate to signal next run
-                                existJob.inactive();
+                                if(existJob.state() !== 'complete' || existJob.state() !== 'failed'){
+                                  //unset the unique mapping for this.
+                                  //existJob.inactive();
+                                  kue.Job.removeUniqueJobData(existJob.id,function(err,deletedJobData){
+                                  //resave initial job, which should set new unique constraint.
+                                    job.save(function(error,newJob){
+                                        return next(null, job);
+                                    });
+                                  });
+                                }
+                                else{
+                                  return next(null, existJob || job);
+                                }
                             }
-
-                            next(null, existJob || job);
+                            else{
+                                next(null, existJob || job);
+                            }
                         }
                     });
                 }
