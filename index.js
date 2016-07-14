@@ -375,6 +375,10 @@ Queue.prototype._computeNextRunTime = function(jobData, done) {
                     new Date(lastRun.valueOf() + humanInterval(interval));
 
                 //return computed time
+
+                if ( isNaN( nextRun.getTime() ) ) {
+                  nextRun = null;
+                }
                 after(null, nextRun);
             } catch (ex) {
                 //to allow parallel run with other interval parser
@@ -383,6 +387,7 @@ Queue.prototype._computeNextRunTime = function(jobData, done) {
         }
     }, function finish(error, results) {
         //was parsed as cron interval?
+
         if (!_.isNull(results.cron)) {
             return done(null, results.cron);
         }
@@ -933,7 +938,7 @@ kue.createQueue = function(options) {
  * @description remove existing job and its schedule
  * @param  {Number|Job|Object}   criteria a job id, job instance or criteria
  *                                        to be used
- * @param  {Function} [done]   a callback to invoke on success or error  
+ * @param  {Function} [done]   a callback to invoke on success or error
  */
 Queue.prototype.remove = Queue.prototype.removeJob = function(criteria, done) {
     //normalize callback

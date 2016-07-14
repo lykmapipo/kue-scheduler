@@ -49,12 +49,12 @@ describe('Queue#now', function() {
 
             finalize();
 
-            done();
         });
 
         //listen on success scheduling
         Queue.on('schedule success', function(job) {
             if (job.type === 'now') {
+
                 /*jshint camelcase:false */
                 expect(job.id).to.exist;
                 expect(job.type).to.equal('now');
@@ -73,6 +73,13 @@ describe('Queue#now', function() {
             .attempts(3)
             .backoff(backoff)
             .priority('normal');
+            //finalize was not always completing before done();
+        Queue.on('job complete', function(){
+                if(job.type === 'now'){
+                  setTimeout(function(){done();},3000);
+                }
+              });
+
 
         Queue.now(job);
     });
@@ -177,7 +184,7 @@ describe('Queue#now', function() {
 
             done();
 
-        }, 3000);
+        }, 5000);
     });
 
 
