@@ -85,6 +85,7 @@ Queue.prototype._isJobAlreadyScheduled = function(jobExpiryKey, done) {
 
             var alreadyScheduled = exists && active;
             done(null, alreadyScheduled);
+
         }
     });
 };
@@ -487,12 +488,18 @@ Queue.prototype._onJobKeyExpiry = function(jobExpiryKey) {
                             //ensure unique job
                             if (existJob && existJob.alreadyExist) {
                                 //inactivate to signal next run
-                                if(existJob.state() !== 'complete' || existJob.state() !== 'failed'){
+                                if(existJob.state() === 'complete' || existJob.state() === 'failed'){
                                   //unset the unique mapping for this.
                                   //existJob.inactive();
-                                  kue.Job.removeUniqueJobData(existJob.id,function(err,deletedJobData){
+                                  kue.Job.removeUniqueJobData(existJob.id,function(err/*,deletedJobData */ ){
                                   //resave initial job, which should set new unique constraint.
+                                   if (err){
+                                     return next(err,null);
+                                   }
                                     job.save(function(error,newJob){
+                                      if (error){
+                                        return next(error,null);
+                                      }
                                           return next(null, newJob);
                                     });
                                   });
@@ -541,7 +548,7 @@ Queue.prototype._subscribe = function() {
     this
         ._listener
         .on('message', function(channel, jobExpiryKey) {
-
+            console.log('in message handler');
             //test if the event key is job expiry key
             //and emit `scheduler unknown job expiry key` if not
             if (!this._isJobExpiryKey(jobExpiryKey)) {
@@ -806,12 +813,18 @@ Queue.prototype.schedule = function(when, job) {
                             //ensure unique job
                             if (existJob && existJob.alreadyExist) {
                                 //inactivate to signal next run
-                                if(existJob.state() !== 'complete' || existJob.state() !== 'failed'){
+                                if(existJob.state() === 'complete' || existJob.state() === 'failed'){
                                   //unset the unique mapping for this.
                                   //existJob.inactive();
-                                  kue.Job.removeUniqueJobData(existJob.id,function(err,deletedJobData){
+                                  kue.Job.removeUniqueJobData(existJob.id,function(err /*, deletedJobData*/){
                                   //resave initial job, which should set new unique constraint.
+                                  if (err){
+                                    return next(err,null);
+                                  }
                                     job.save(function(error,newJob){
+                                      if (error){
+                                        return next(error,null);
+                                      }
                                       return next(null, newJob);
                                     });
                                   });
@@ -897,13 +910,19 @@ Queue.prototype.now = function(job) {
                             //ensure unique job
                             if (existJob && existJob.alreadyExist) {
                                 //inactivate to signal next run
-                                if(existJob.state() !== 'complete' || existJob.state() !== 'failed'){
+                                if(existJob.state() === 'complete' || existJob.state() === 'failed'){
                                   //unset the unique mapping for this.
                                   //existJob.inactive();
-                                  kue.Job.removeUniqueJobData(existJob.id,function(err,deletedJobData){
+                                  kue.Job.removeUniqueJobData(existJob.id,function(err/*,deletedJobData*/){
                                   //resave initial job, which should set new unique constraint.
+                                  if (err){
+                                    return next(err,null);
+                                  }
                                     job.save(function(error,newJob){
-                                        return next(null, job);
+                                      if (error){
+                                        return next(error,null);
+                                      }
+                                        return next(null, newJob);
                                     });
                                   });
                                 }
@@ -947,6 +966,10 @@ var shutdown = Queue.prototype.shutdown;
  */
 Queue.prototype.shutdown = function( /*fn, timeout, type*/ ) {
     //this refer to kue Queue instance context
+
+
+    //stop processing new expiry messages
+    this._listener.removeAllListeners('message');
 
     //unsubscribe to key expiry events
     this._listener.unsubscribe('__keyevent@0__:expired');
