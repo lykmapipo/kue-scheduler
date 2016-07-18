@@ -24,6 +24,7 @@ var datejs = require('date.js');
 var uuid = require('node-uuid');
 var humanInterval = require('human-interval');
 var CronTime = require('cron').CronTime;
+var Redlock = require('redlock');
 
 
 /**
@@ -153,6 +154,20 @@ Queue.prototype._getJobDataKey = function(uuid) {
 
     return this.options.prefix + ':scheduler:data:' + uuid;
 };
+
+/**
+ * @function
+ * @description generate a lock for the scheduling of a job
+ * @return {String} a key to lock on based on the UUID
+ * @private
+ */
+Queue.prototype._getJobLockKey = function(uuid) {
+    //this refer to kue Queue instance context
+
+    return this.options.prefix + ':scheduler:locks:' + uuid;
+};
+
+
 
 
 /**
@@ -375,6 +390,10 @@ Queue.prototype._computeNextRunTime = function(jobData, done) {
                     new Date(lastRun.valueOf() + humanInterval(interval));
 
                 //return computed time
+
+                if ( isNaN( nextRun.getTime() ) ) {
+                  nextRun = null;
+                }
                 after(null, nextRun);
             } catch (ex) {
                 //to allow parallel run with other interval parser
@@ -383,6 +402,7 @@ Queue.prototype._computeNextRunTime = function(jobData, done) {
         }
     }, function finish(error, results) {
         //was parsed as cron interval?
+
         if (!_.isNull(results.cron)) {
             return done(null, results.cron);
         }
@@ -406,77 +426,93 @@ Queue.prototype._computeNextRunTime = function(jobData, done) {
  */
 Queue.prototype._onJobKeyExpiry = function(jobExpiryKey) {
     //this refer to kue Queue instance context
+    var jobLockKey = this._getJobLockKey(this._getJobUUID(jobExpiryKey));
+    this._redlock.lock(jobLockKey,1000,function(err,lock){
+      if(err){
 
-    async.waterfall(
-        [
-            //get job data
-            function getJobData(next) {
-                //get job uuid
-                var jobUUID = this._getJobUUID(jobExpiryKey);
+      }
+      else{
+        
+        async.waterfall(
+            [
 
-                //get saved job data
-                this._readJobData(this._getJobDataKey(jobUUID), next);
-            }.bind(this),
+                //get job data
+                //
+                function getJobData(next) {
+                    //get job uuid
+                    var jobUUID = this._getJobUUID(jobExpiryKey);
 
-            //compute next run time
-            function computeNextRun(jobData, next) {
-                this
-                    ._computeNextRunTime(jobData, function(error, nextRunTime) {
+                    //get saved job data
+                    this._readJobData(this._getJobDataKey(jobUUID), next);
+                }.bind(this),
+                //compute next run time
+                function computeNextRun(jobData, next) {
+                    this
+                        ._computeNextRunTime(jobData, function(error, nextRunTime) {
+                            if (error) {
+                                next(error);
+                            } else {
+                                next(null, jobData, nextRunTime);
+                            }
+                        });
+                }.bind(this),
+
+                //resave the key to rerun this job again
+                function resaveJobKey(jobData, nextRunTime, next) {
+
+                    //compute delay
+                    var now = new Date();
+                    var delay = nextRunTime.getTime() - now.getTime();
+
+                    this
+                        ._scheduler
+                        .set(jobExpiryKey, '', 'PX', delay, function(error) {
+                            if (error) {
+                                next(error);
+                            } else {
+                                next(null, jobData);
+                            }
+                        });
+                }.bind(this),
+
+                function buildJob(jobDefinition, next) {
+                    this._buildJob(jobDefinition, next);
+                }.bind(this),
+
+                function runJob(job, validations, next) {
+                    job.save(function(error, existJob) {
                         if (error) {
                             next(error);
                         } else {
-                            next(null, jobData, nextRunTime);
+                            //ensure unique job
+                            if (existJob && existJob.alreadyExist) {
+                                //inactivate to signal next run
+                                existJob.inactive();
+                            }
+
+                            next(null, existJob || job);
                         }
                     });
-            }.bind(this),
-
-            //resave the key to rerun this job again
-            function resaveJobKey(jobData, nextRunTime, next) {
-
-                //compute delay
-                var now = new Date();
-                var delay = nextRunTime.getTime() - now.getTime();
-
-                this
-                    ._scheduler
-                    .set(jobExpiryKey, '', 'PX', delay, function(error) {
-                        if (error) {
-                            next(error);
-                        } else {
-                            next(null, jobData);
-                        }
-                    });
-            }.bind(this),
-
-            function buildJob(jobDefinition, next) {
-                this._buildJob(jobDefinition, next);
-            }.bind(this),
-
-            function runJob(job, validations, next) {
-                job.save(function(error, existJob) {
-                    if (error) {
-                        next(error);
-                    } else {
-                        //ensure unique job
-                        if (existJob && existJob.alreadyExist) {
-                            //inactivate to signal next run
-                            existJob.inactive();
-                        }
-
-                        next(null, existJob || job);
-                    }
+                }
+            ],
+            function(error, job) {
+                lock.unlock(function(err){
+                  if (err){
+                    // couldn't talk to redis to unlock the lock, which will release at the 1s ttl.
+                    console.log(err);
+                  }
                 });
-            }
-        ],
-        function(error, job) {
-            if (error) {
-                this.emit('schedule error', error);
-            } else if (job.alreadyExist) {
-                this.emit('already scheduled', job);
-            } else {
-                this.emit('schedule success', job);
-            }
-        }.bind(this));
+                if (error) {
+                    this.emit('schedule error', error);
+                } else if (job.alreadyExist) {
+                    this.emit('already scheduled', job);
+                } else {
+                    this.emit('schedule success', job);
+                }
+            }.bind(this));
+        }
+
+      }.bind(this)); //end redlock
 };
 
 
@@ -584,59 +620,73 @@ Queue.prototype.every = function(interval, job) {
                 this.emit('schedule error', error);
             }
 
+
             if (!isAlreadyScheduled) {
-                async.parallel({
 
-                    jobExpiryKey: function(next) {
-                        next(null, this._getJobExpiryKey(jobUUID));
-                    }.bind(this),
 
-                    jobDataKey: function(next) {
-                        next(null, this._getJobDataKey(jobUUID));
-                    }.bind(this),
+              this._redlock.lock(this._getJobLockKey(jobUUID), 1000, function(err,lock){
+                if (err){
+                  //console.log(err);
+                  //failed to get lock, this is ok.
+                }
+                else {
+                  async.parallel({
 
-                    nextRunTime: function(next) {
-                        this._computeNextRunTime(jobDefinition, next);
-                    }.bind(this)
+                      jobExpiryKey: function(next) {
+                          next(null, this._getJobExpiryKey(jobUUID));
+                      }.bind(this),
 
-                }, function finish(error, results) {
-                    if (error) {
-                        this.emit('schedule error', error);
-                    } else {
+                      jobDataKey: function(next) {
+                          next(null, this._getJobDataKey(jobUUID));
+                      }.bind(this),
 
-                        var now = new Date();
-                        var delay = results.nextRunTime.getTime() - now.getTime();
+                      nextRunTime: function(next) {
+                          this._computeNextRunTime(jobDefinition, next);
+                      }.bind(this)
 
-                        async
-                        .waterfall([
+                  }, function finish(error, results) {
+                      if (error) {
+                          this.emit('schedule error', error);
+                      } else {
 
-                            function saveJobData(next) {
-                                //extend job definition with expiry key
-                                jobDefinition.data.expiryKey = results.jobExpiryKey;
+                          var now = new Date();
+                          var delay = results.nextRunTime.getTime() - now.getTime();
 
-                                //extend job definition with data key
-                                jobDefinition.data.dataKey = results.jobDataKey;
+                          async
+                          .waterfall([
 
-                                //save job data
-                                this._saveJobData(results.jobDataKey, jobDefinition, next);
+                              function saveJobData(next) {
+                                  //extend job definition with expiry key
+                                  jobDefinition.data.expiryKey = results.jobExpiryKey;
 
-                            }.bind(this),
+                                  //extend job definition with data key
+                                  jobDefinition.data.dataKey = results.jobDataKey;
 
-                            function setJobKeyExpiry(jobData, next) {
-                                //save key an wait for it to expiry
-                                this._scheduler.set(results.jobExpiryKey, '', 'PX', delay, next);
+                                  //save job data
+                                  this._saveJobData(results.jobDataKey, jobDefinition, next);
 
-                            }.bind(this)
+                              }.bind(this),
 
-                        ], function(error) {
-                            if (error) {
-                                this.emit('schedule error', error);
-                            }
-                        }.bind(this));
-                    }
+                              function setJobKeyExpiry(jobData, next) {
+                                  //save key an wait for it to expiry
+                                  this._scheduler.set(results.jobExpiryKey, '', 'PX', delay, next);
 
-                }.bind(this));
-            }
+                              }.bind(this)
+
+                          ], function(error) {
+                              lock.unlock();
+                              if (error) {
+                                  this.emit('schedule error', error);
+                              }
+                          }.bind(this));
+                      }
+
+                  }.bind(this));
+              }
+
+            }.bind(this));
+            // end redlock.
+          }
         }.bind(this));
 
     }
@@ -907,7 +957,7 @@ kue.createQueue = function(options) {
 
     //a redis client for scheduling key expiry
     queue._scheduler = redis.createClient();
-
+    queue._redlock = new Redlock([queue._scheduler],{retryCount:0});
     //a redis client to listen for key expiry
     queue._listener = redis.createClient();
 
@@ -933,7 +983,7 @@ kue.createQueue = function(options) {
  * @description remove existing job and its schedule
  * @param  {Number|Job|Object}   criteria a job id, job instance or criteria
  *                                        to be used
- * @param  {Function} [done]   a callback to invoke on success or error  
+ * @param  {Function} [done]   a callback to invoke on success or error
  */
 Queue.prototype.remove = Queue.prototype.removeJob = function(criteria, done) {
     //normalize callback
