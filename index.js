@@ -432,7 +432,7 @@ Queue.prototype._onJobKeyExpiry = function(jobExpiryKey) {
 
       }
       else{
-        
+
         async.waterfall(
             [
 
@@ -541,8 +541,30 @@ Queue.prototype._subscribe = function() {
         }.bind(this));
 
     //subscribe to key expiration events
-    this._listener.subscribe('__keyevent@0__:expired');
+    this._listener.subscribe(this._getExpiredSubscribeKey());
 
+};
+
+
+/**
+ * @function
+ * @description get a key to subscribe on for expired events
+ * @return {String} key for expired events
+ * @private
+ */
+Queue.prototype._getExpiredSubscribeKey = function() {
+    // default redis db
+    var redisDb = 0;
+    if (Queue.prototype.options.redis.db) {
+        //works for node-redis
+        redisDb = Queue.prototype.options.redis.db;
+    } else if (this._listener.options.db) {
+        //works for ioredis
+        redisDb = this._listener.options.db;
+    }
+
+    // key to subscribe on
+    return '__keyevent@' + redisDb + '__:expired';
 };
 
 
@@ -909,7 +931,7 @@ Queue.prototype.shutdown = function( /*fn, timeout, type*/ ) {
     //this refer to kue Queue instance context
 
     //unsubscribe to key expiry events
-    this._listener.unsubscribe('__keyevent@0__:expired');
+    this._listener.unsubscribe(this._getExpiredSubscribeKey());
 
     //close _scheduler,
     // _lister and
