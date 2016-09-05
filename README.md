@@ -294,7 +294,7 @@ Queue.remove({
 ```
 
 ## Events
-Currently the only way to interact with `kue-scheduler` is through its events. `kue-scheduler` fires `schedule error`, `schedule success`, `already scheduled` and `scheduler unknown job expiry key` events.
+Currently the only way to interact with `kue-scheduler` is through its events. `kue-scheduler` fires `schedule error`, `schedule success`, `already scheduled`,`lock error`, `unlock error` and `scheduler unknown job expiry key` events.
 
 ### `schedule error`
 Use it to interact with `kue-scheduler` to get notified when an error occur.
@@ -342,6 +342,42 @@ Use it to interact with `kue-scheduler` to be notified if the current instance o
 ```js
 //listen alrady scheduled jobs
 Queue.on('already scheduled', function(job) {
+    ...
+});
+
+var job = Queue
+    .createJob('now', data)
+    .attempts(3)
+    .backoff(backoff)
+    .priority('normal');
+
+Queue.now(job);
+```
+
+### `lock error`
+Use it to interact with `kue-scheduler` to get notified when a [lock](https://github.com/mike-marcacci/node-redlock) error occured.
+
+```js
+//listen on scheduler errors
+Queue.on('lock error', function(error) {
+    ...
+});
+
+var job = Queue
+    .createJob('now', data)
+    .attempts(3)
+    .backoff(backoff)
+    .priority('normal');
+
+Queue.now(job);
+```
+
+### `unlock error`
+Use it to interact with `kue-scheduler` to get notified when [unlock](https://github.com/mike-marcacci/node-redlock) error occured.
+
+```js
+//listen on scheduler errors
+Queue.on('unlock error', function(error) {
     ...
 });
 

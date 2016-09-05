@@ -1,5 +1,6 @@
 'use strict';
 
+
 /**
  * @module
  * @name kue-scheduler
@@ -36,7 +37,9 @@ var Redlock = require('redlock');
 Queue.prototype._getJobExpiryKey = function (uuid) {
   //this refer to kue Queue instance context
 
-  return this.options.prefix + ':scheduler:' + uuid;
+  var key = this.options.prefix + ':scheduler:' + uuid;
+
+  return key;
 };
 
 
@@ -57,6 +60,7 @@ Queue.prototype._isJobExpiryKey = function (jobExpiryKey) {
 
 
 /**
+ * @function
  * @description check if job exists and its ttl has not timeout
  * @param  {String}   jobExpiryKey valid job expiry key
  * @param  {Function} done         a function to invoke on success or error
@@ -80,11 +84,14 @@ Queue.prototype._isJobAlreadyScheduled = function (jobExpiryKey, done) {
     if (error) {
       done(error);
     } else {
-      var exists = (results.exists && results.exists === 1) ? true :
-        false;
-      var active = (results.ttl && results.ttl > 0) ? true : false;
+      var exists =
+        (results.exists && results.exists === 1) ? true : false;
+
+      var active =
+        (results.ttl && results.ttl > 0) ? true : false;
 
       var alreadyScheduled = exists && active;
+
       done(null, alreadyScheduled);
 
     }
@@ -93,6 +100,7 @@ Queue.prototype._isJobAlreadyScheduled = function (jobExpiryKey, done) {
 
 
 /**
+ * @function
  * @description generate job uuid from job definition
  * @param  {Object} jobDefinition valid job definition
  * @return {String}               job uuid
@@ -153,9 +161,11 @@ Queue.prototype._getJobUUID = function (key) {
  */
 Queue.prototype._getJobDataKey = function (uuid) {
   //this refer to kue Queue instance context
+  var key = this.options.prefix + ':scheduler:data:' + uuid;
 
-  return this.options.prefix + ':scheduler:data:' + uuid;
+  return key;
 };
+
 
 /**
  * @function
@@ -165,21 +175,24 @@ Queue.prototype._getJobDataKey = function (uuid) {
  */
 Queue.prototype._getJobLockKey = function (uuid) {
   //this refer to kue Queue instance context
+  var key = this.options.prefix + ':scheduler:locks:' + uuid;
 
-  return this.options.prefix + ':scheduler:locks:' + uuid;
+  return key;
 };
-
-
 
 
 /**
  * @function
  * @description save scheduled job data into redis backend
+ * @param {String} jobDataKey valid job data key
+ * @param {Object} jobData valid job data
+ * @param {Function} done a callback to invoke on success or failure
  * @private
  */
 Queue.prototype._saveJobData = function (jobDataKey, jobData, done) {
   //this refer to kue Queue instance context
 
+  //TODO make use of redis hash i.e redis.hmset(<key>, <data>);
   this
     ._scheduler
     .set(jobDataKey, JSON.stringify(jobData), function (error /*, response*/ ) {
@@ -191,11 +204,15 @@ Queue.prototype._saveJobData = function (jobDataKey, jobData, done) {
 /**
  * @function
  * @description retrieved saved scheduled job data from redis backend
+ * @param {String} jobDataKey valid job data key
+ * @param {Function} done a callback to invoke on success or failure
+ * @return {Object} job data if found else error
  * @private
  */
 Queue.prototype._readJobData = function (jobDataKey, done) {
   //this refer to kue Queue instance context
 
+  //TODO make use of redis hash i.e redis.hgetall(<key>);
   this
     ._scheduler
     .get(jobDataKey, function (error, data) {
@@ -338,6 +355,8 @@ Queue.prototype._buildJob = function (jobDefinition, done) {
 /**
  * @function
  * @description compute next run time of the given job data
+ * @param {Object} jobData valid job data
+ * @param {Function} done a callback to invoke on success or failure
  * @private
  */
 Queue.prototype._computeNextRunTime = function (jobData, done) {
@@ -367,9 +386,7 @@ Queue.prototype._computeNextRunTime = function (jobData, done) {
         // for the next run time
         if (nextRun.valueOf() === lastRun.valueOf()) {
           nextRun =
-            cronTime._getNextDateFrom(
-              new Date(lastRun.valueOf() + 1000)
-            );
+            cronTime._getNextDateFrom(new Date(lastRun.valueOf() + 1000));
         }
 
         //return computed time
@@ -423,22 +440,36 @@ Queue.prototype._computeNextRunTime = function (jobData, done) {
 
 
 /**
+ * @function
  * @description respond to job key expiry events
  * @param  {String} jobExpiryKey valid job expiry key
+ * @private
  */
 Queue.prototype._onJobKeyExpiry = function (jobExpiryKey) {
   //this refer to kue Queue instance context
-  var jobLockKey = this._getJobLockKey(this._getJobUUID(jobExpiryKey));
-  this._redlock.lock(jobLockKey, 1000, function (err, lock) {
-    if (err) {
 
-    } else {
+  //TODO refactor
+
+  //generate lock key for specific job
+  var jobLockKey = this._getJobLockKey(this._getJobUUID(jobExpiryKey));
+
+  //obtain lock to ensure only one worker process expiry event
+  //TODO add specs to test for lock lifetime
+  this._redlock.lock(jobLockKey, 1000, function (err, lock) {
+
+    //handle lock error
+    if (err) {
+      //notity error to queue instance
+      this.emit('lock error', err);
+    }
+
+    //continue to process event
+    else {
 
       async.waterfall(
         [
 
           //get job data
-          //
           function getJobData(next) {
             //get job uuid
             var jobUUID = this._getJobUUID(jobExpiryKey);
@@ -446,6 +477,7 @@ Queue.prototype._onJobKeyExpiry = function (jobExpiryKey) {
             //get saved job data
             this._readJobData(this._getJobDataKey(jobUUID), next);
           }.bind(this),
+
           //compute next run time
           function computeNextRun(jobData, next) {
             this
@@ -519,7 +551,11 @@ Queue.prototype._onJobKeyExpiry = function (jobExpiryKey) {
         function (error, job) {
           lock.unlock(function (err) {
             if (err) {
-              // couldn't talk to redis to unlock the lock, which will release at the 1s ttl.
+              // couldn't talk to redis to unlock the lock, 
+              // which will release at the 1s ttl.
+              // 
+              //notity error to queue instance
+              this.emit('unlock error', error);
             }
           });
           if (error) {
@@ -618,7 +654,7 @@ Queue.prototype._getExpiredSubscribeKey = function () {
  *              .unique(<unique_key>);
  *
  *      Queue.every('2 seconds', job);
- * @private
+ * @public
  */
 Queue.prototype.every = function (interval, job) {
   //this refer to kue Queue instance context
@@ -655,82 +691,84 @@ Queue.prototype.every = function (interval, job) {
     //generate job uuid
     var jobUUID = this._generateJobUUID(jobDefinition);
 
+    //TODO refactor to us async
+
     //check if job already scheduled
-    this._isJobAlreadyScheduled(this._getJobExpiryKey(jobUUID), function (
-      error, isAlreadyScheduled) {
-      if (error) {
-        this.emit('schedule error', error);
-      }
+    this._isJobAlreadyScheduled(this._getJobExpiryKey(jobUUID),
+      function (error, isAlreadyScheduled) {
+        if (error) {
+          this.emit('schedule error', error);
+        }
+
+        if (!isAlreadyScheduled) {
 
 
-      if (!isAlreadyScheduled) {
-
-
-        this._redlock.lock(this._getJobLockKey(jobUUID), 1000, function (
-          err, lock) {
-          if (err) {
-            //failed to get lock, this is ok.
-          } else {
-            async.parallel({
-
-              jobExpiryKey: function (next) {
-                next(null, this._getJobExpiryKey(jobUUID));
-              }.bind(this),
-
-              jobDataKey: function (next) {
-                next(null, this._getJobDataKey(jobUUID));
-              }.bind(this),
-
-              nextRunTime: function (next) {
-                this._computeNextRunTime(jobDefinition, next);
-              }.bind(this)
-
-            }, function finish(error, results) {
-              if (error) {
-                this.emit('schedule error', error);
+          this._redlock.lock(this._getJobLockKey(jobUUID), 1000,
+            function (err, lock) {
+              if (err) {
+                //failed to get lock, this is ok.
+                this.emit('lock error', err);
               } else {
+                async.parallel({
 
-                var now = new Date();
-                var delay = results.nextRunTime.getTime() - now.getTime();
-
-                async
-                .waterfall([
-
-                  function saveJobData(next) {
-                    //extend job definition with expiry key
-                    jobDefinition.data.expiryKey = results.jobExpiryKey;
-
-                    //extend job definition with data key
-                    jobDefinition.data.dataKey = results.jobDataKey;
-
-                    //save job data
-                    this._saveJobData(results.jobDataKey,
-                      jobDefinition, next);
-
+                  jobExpiryKey: function (next) {
+                    next(null, this._getJobExpiryKey(jobUUID));
                   }.bind(this),
 
-                  function setJobKeyExpiry(jobData, next) {
-                    //save key an wait for it to expiry
-                    this._scheduler.set(results.jobExpiryKey,
-                      '', 'PX', delay, next);
+                  jobDataKey: function (next) {
+                    next(null, this._getJobDataKey(jobUUID));
+                  }.bind(this),
 
+                  nextRunTime: function (next) {
+                    this._computeNextRunTime(jobDefinition, next);
                   }.bind(this)
 
-                ], function (error) {
-                  lock.unlock();
+                }, function finish(error, results) {
                   if (error) {
                     this.emit('schedule error', error);
+                  } else {
+
+                    var now = new Date();
+                    var delay = results.nextRunTime.getTime() - now.getTime();
+
+                    async
+                    .waterfall([
+
+                      function saveJobData(next) {
+                        //extend job definition with expiry key
+                        jobDefinition.data.expiryKey = results.jobExpiryKey;
+
+                        //extend job definition with data key
+                        jobDefinition.data.dataKey = results.jobDataKey;
+
+                        //save job data
+                        this._saveJobData(results.jobDataKey,
+                          jobDefinition, next);
+
+                      }.bind(this),
+
+                      function setJobKeyExpiry(jobData, next) {
+                        //save key an wait for it to expiry
+                        this._scheduler.set(results.jobExpiryKey,
+                          '', 'PX', delay, next);
+
+                      }.bind(this)
+
+                    ], function (error) {
+                      lock.unlock();
+                      if (error) {
+                        this.emit('schedule error', error);
+                      }
+                    }.bind(this));
                   }
+
                 }.bind(this));
               }
 
             }.bind(this));
-          }
-
-        }.bind(this));
-        // end redlock.
-      }
-    }.bind(this));
+          // end redlock.
+        }
+      }.bind(this));
 
   }
 
@@ -769,7 +807,7 @@ Queue.prototype.every = function (interval, job) {
  *              .unique(<unique_key>);
  *
  *      Queue.schedule('2 seconds from now', job);
- * @private
+ * @public
  */
 Queue.prototype.schedule = function (when, job) {
   //this refer to kue Queue instance context
@@ -889,6 +927,7 @@ Queue.prototype.schedule = function (when, job) {
  *              on event.
  *
  * @param  {Job}   job a valid kue job instance which has not been saved
+ * @param  {Function}  [done] a callback to invoke on success or failure
  * @example
  *     1. create non-unique job
  *     var job = Queue
@@ -906,71 +945,83 @@ Queue.prototype.schedule = function (when, job) {
  *              .unique(<unique_key>);
  *
  *      Queue.now(job);
- * @private
+ * @public
  */
-Queue.prototype.now = function (job) {
+Queue.prototype.now = function (job, done) {
   //this refer to kue Queue instance context
 
-  if (!job || !(job instanceof Job)) {
-    this.emit('schedule error', new Error('Invalid job type'));
-  } else {
+  async.waterfall([
 
-    var jobDefinition = _.extend(job.toJSON(), {
-      backoff: job._backoff
-    });
+    function ensureJobInstance(next) {
+      if (!job || !(job instanceof Job)) {
+        next(new Error('Invalid job type'));
+      } else {
+        next(null, job);
+      }
+    },
 
-    async.waterfall(
-      [
-        function buildJob(next) {
-          this._buildJob(jobDefinition, next);
-        }.bind(this),
+    function buildJob(job, next) {
+      //obtain job definition
+      //TODO use job instance directly than recreating it
+      var jobDefinition = _.extend(job.toJSON(), {
+        backoff: job._backoff
+      });
 
-        function saveJob(job, validations, next) {
-          job.save(function (error, existJob) {
-            if (error) {
-              next(error);
-            } else {
-              //ensure unique job
-              if (existJob && existJob.alreadyExist) {
-                //inactivate to signal next run
-                if (existJob.state() === 'complete' || existJob.state() ===
-                  'failed') {
-                  //unset the unique mapping for this.
-                  //existJob.inactive();
-                  kue.Job.removeUniqueJobData(existJob.id, function (
-                    err /*,deletedJobData*/ ) {
-                    //resave initial job, which should set new unique constraint.
-                    if (err) {
-                      return next(err, null);
-                    }
-                    job.save(function (error, newJob) {
-                      if (error) {
-                        return next(error, null);
-                      }
-                      return next(null, newJob);
-                    });
-                  });
-                } else {
-                  return next(null, existJob || job);
-                }
-              } else {
-                next(null, existJob || job);
-              }
-            }
-          });
-        }
-      ],
-      function finish(error, job) {
-        //TODO fire already scheduled events
-        if (error) {
-          this.emit('schedule error', error);
-        } else if (job.alreadyExist) {
-          this.emit('already scheduled', job);
+      this._buildJob(jobDefinition, next);
+    }.bind(this),
+
+    function saveJob(job, validations, next) {
+      job.save(function (error, existJob) {
+        next(error, existJob || job);
+      });
+    },
+
+    function ensureUniqueJob(job, next) {
+      if (job && job.alreadyExist) {
+        //check if job is complete or failed
+        var isCompletedOrFailedJob =
+          (job.state() === 'complete' ||
+            job.state() === 'failed');
+
+        if (isCompletedOrFailedJob) {
+          //resave job for next run
+          //
+          //NOTE!: We inactivate job to allow kue to queue the same job for next run.
+          //This will ensure only a single job instance will be used for the next run.
+          //This is the case for unique job behaviour.
+          job.inactive();
+          job.save(next);
         } else {
-          this.emit('schedule success', job);
+          next(null, job);
         }
-      }.bind(this));
-  }
+      } else {
+        next(null, job);
+      }
+    }
+
+  ], function (error, job) {
+    //fire schedule error event
+    if (error) {
+      this.emit('schedule error', error);
+    }
+
+    //fire already schedule event
+    else if (job.alreadyExist) {
+      this.emit('already scheduled', job);
+    }
+
+    //fire schedule success event
+    else {
+      this.emit('schedule success', job);
+    }
+
+    //invoke callback if provided
+    if (done && _.isFuction(done)) {
+      done(error, job);
+    }
+
+  }.bind(this));
+
 };
 
 
@@ -981,8 +1032,8 @@ var shutdown = Queue.prototype.shutdown;
 //
 //
 /**
- * Graceful shutdown
- *
+ * @function
+ * @description graceful shutdown
  * @param {Function} fn callback
  * @return {Queue} for chaining
  * @api public
@@ -990,6 +1041,8 @@ var shutdown = Queue.prototype.shutdown;
 Queue.prototype.shutdown = function ( /*fn, timeout, type*/ ) {
   //this refer to kue Queue instance context
 
+  //TODO ensure all client shutdown with waiting delay
+  //TODO remove all listeners
 
   //stop processing new expiry messages
   this._listener.removeAllListeners('message');
@@ -1037,13 +1090,20 @@ kue.createQueue = function (options) {
   //instatiate kue
   var queue = createQueue.call(kue, options);
 
+  //TODO ensure only one queue instance exists
+  //TODO ensure one time listener and setup
+
   //create job expiry key RegEx validator
   queue._jobExpiryKeyValidator =
     new RegExp('^' + queue.options.prefix + ':scheduler:');
 
   //a redis client for scheduling key expiry
   queue._scheduler = redis.createClient();
+
+  //instantiate redlock instance
+  //TODO why not use warlock which is already used in kue?
   queue._redlock = new Redlock([queue._scheduler], { retryCount: 0 });
+
   //a redis client to listen for key expiry
   queue._listener = redis.createClient();
 
@@ -1066,10 +1126,12 @@ kue.createQueue = function (options) {
 
 
 /**
+ * @function
  * @description remove existing job and its schedule
  * @param  {Number|Job|Object}   criteria a job id, job instance or criteria
  *                                        to be used
  * @param  {Function} [done]   a callback to invoke on success or error
+ * @public
  */
 Queue.prototype.remove = Queue.prototype.removeJob = function (criteria, done) {
   //normalize callback
@@ -1208,6 +1270,47 @@ Queue.prototype.remove = Queue.prototype.removeJob = function (criteria, done) {
     }.bind(this));
 
   }.bind(this));
+};
+
+
+/**
+ * @function
+ * @description cleanup and reset current kue and kue-scheduler states
+ * @param  {Function} done a callback to invoke on success or failure
+ * @public
+ */
+Queue.prototype.clear = Queue.prototype.clean = function (done) {
+  //this refer to kue Queue instance context
+
+  //obtain redis client
+  //@see https://github.com/Automattic/kue/blob/master/lib/kue.js#L98
+  this.client = this.client || redis.createClient();
+
+  //obtain cleanup key pattern
+  var keyPattern = [this.options.prefix, '*'].join('');
+
+  //obtain all kue & kue-scheduler keys
+  this.client.keys(keyPattern, function (error, keys) {
+    //back-off in case of error
+    if (error) {
+      done(error);
+    }
+
+    //continue with cleanup
+    else {
+      //obtain multi to ensure atomicity on cleanup
+      var client = this.client.multi();
+
+      //queue delete commands
+      _.forEach(keys, function (key) {
+        client.del(key);
+      });
+
+      //execute delete command
+      client.exec(done);
+    }
+  }.bind(this));
+
 };
 
 
