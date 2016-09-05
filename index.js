@@ -520,7 +520,6 @@ Queue.prototype._onJobKeyExpiry = function (jobExpiryKey) {
           lock.unlock(function (err) {
             if (err) {
               // couldn't talk to redis to unlock the lock, which will release at the 1s ttl.
-              console.log(err);
             }
           });
           if (error) {
@@ -549,7 +548,6 @@ Queue.prototype._subscribe = function () {
   this
     ._listener
     .on('message', function (channel, jobExpiryKey) {
-      console.log('in message handler');
       //test if the event key is job expiry key
       //and emit `scheduler unknown job expiry key` if not
       if (!this._isJobExpiryKey(jobExpiryKey)) {
@@ -671,7 +669,6 @@ Queue.prototype.every = function (interval, job) {
         this._redlock.lock(this._getJobLockKey(jobUUID), 1000, function (
           err, lock) {
           if (err) {
-            //console.log(err);
             //failed to get lock, this is ok.
           } else {
             async.parallel({
