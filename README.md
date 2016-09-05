@@ -161,6 +161,20 @@ Queue.process('now', function(job, done) {
 
 ## API
 
+### `clear(done)`
+Clear all `kue` and `kue-scheduler` redis data. Clean up if performed atomically with fail all or success all guarantee.
+
+Example
+```js
+var kue = require('kue-scheduler');
+var Queue = kue.createQueue();
+
+//perform cleanup
+Queue.clear(fuction(error,response){
+    ...
+});
+```
+
 ### `enableExpiryNotifications()`
 Enable `redis key expiry notifications`.
 

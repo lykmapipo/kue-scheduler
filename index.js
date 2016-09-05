@@ -1279,39 +1279,41 @@ Queue.prototype.remove = Queue.prototype.removeJob = function (criteria, done) {
  * @param  {Function} done a callback to invoke on success or failure
  * @public
  */
-Queue.prototype.clear = Queue.prototype.clean = function (done) {
-  //this refer to kue Queue instance context
+Queue.prototype.clear =
+  Queue.prototype.cleanup =
+  Queue.prototype.clean = function (done) {
+    //this refer to kue Queue instance context
 
-  //obtain redis client
-  //@see https://github.com/Automattic/kue/blob/master/lib/kue.js#L98
-  this.client = this.client || redis.createClient();
+    //obtain redis client
+    //@see https://github.com/Automattic/kue/blob/master/lib/kue.js#L98
+    this.client = this.client || redis.createClient();
 
-  //obtain cleanup key pattern
-  var keyPattern = [this.options.prefix, '*'].join('');
+    //obtain cleanup key pattern
+    var keyPattern = [this.options.prefix, '*'].join('');
 
-  //obtain all kue & kue-scheduler keys
-  this.client.keys(keyPattern, function (error, keys) {
-    //back-off in case of error
-    if (error) {
-      done(error);
-    }
+    //obtain all kue & kue-scheduler keys
+    this.client.keys(keyPattern, function (error, keys) {
+      //back-off in case of error
+      if (error) {
+        done(error);
+      }
 
-    //continue with cleanup
-    else {
-      //obtain multi to ensure atomicity on cleanup
-      var client = this.client.multi();
+      //continue with cleanup
+      else {
+        //obtain multi to ensure atomicity on cleanup
+        var client = this.client.multi();
 
-      //queue delete commands
-      _.forEach(keys, function (key) {
-        client.del(key);
-      });
+        //queue delete commands
+        _.forEach(keys, function (key) {
+          client.del(key);
+        });
 
-      //execute delete command
-      client.exec(done);
-    }
-  }.bind(this));
+        //execute delete command
+        client.exec(done);
+      }
+    }.bind(this));
 
-};
+  };
 
 
 /**
