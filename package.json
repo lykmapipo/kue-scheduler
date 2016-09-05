@@ -51,13 +51,13 @@
     "github": "https://github.com/elyas-bhy"
   }],
   "dependencies": {
-    "async": "^1.5.2",
+    "async": "^2.0.1",
     "cron": "^1.1.0",
-    "date.js": "^0.2.2",
+    "date.js": "^0.3.1",
     "human-interval": "^0.1.6",
     "kue": "^0.11.1",
-    "kue-unique": "^0.1.4",
-    "lodash": "^3.10.1",
+    "kue-unique": "^1.0.0",
+    "lodash": "^4.15.0",
     "node-uuid": "^1.4.7",
     "redlock": "^2.0.0"
   },
