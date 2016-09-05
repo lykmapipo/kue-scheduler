@@ -28,6 +28,52 @@ var CronTime = require('cron').CronTime;
 var Redlock = require('redlock');
 
 
+//------------------------------------------------------------------------------
+// utility helpers
+//------------------------------------------------------------------------------
+
+/**
+ * @function
+ * @description ensure only a single job instance
+ *              
+ *              This is a case when working on reccur job(s) and only one instance
+ *              of a job is supposed to exists and only current run history is 
+ *              of importance than previous running
+ *              
+ * @param  {Job}   job  valid job instance
+ * @param  {Function} done a callback to invoke on success or failure
+ * @return {Job}        valid job instance
+ * @private
+ */
+function ensureUniqueJob(job, done) {
+
+  if (job && job.alreadyExist) {
+    //check if job is complete or failed
+    var isCompletedOrFailedJob =
+      (job.state() === 'complete' ||
+        job.state() === 'failed');
+
+    if (isCompletedOrFailedJob) {
+      //resave job for next run
+      //
+      //NOTE!: We inactivate job to allow kue to queue the same job for next run.
+      //This will ensure only a single job instance will be used for the next run.
+      //This is the case for unique job behaviour.
+      job.inactive();
+      job.save(done);
+    } else {
+      done(null, job);
+    }
+  } else {
+    done(null, job);
+  }
+}
+
+
+//------------------------------------------------------------------------------
+//patch and implementations
+//------------------------------------------------------------------------------
+
 /**
  * @function
  * @description generate an expiration key that is used to track job scheduling
@@ -976,27 +1022,8 @@ Queue.prototype.now = function (job, done) {
       });
     },
 
-    function ensureUniqueJob(job, next) {
-      if (job && job.alreadyExist) {
-        //check if job is complete or failed
-        var isCompletedOrFailedJob =
-          (job.state() === 'complete' ||
-            job.state() === 'failed');
-
-        if (isCompletedOrFailedJob) {
-          //resave job for next run
-          //
-          //NOTE!: We inactivate job to allow kue to queue the same job for next run.
-          //This will ensure only a single job instance will be used for the next run.
-          //This is the case for unique job behaviour.
-          job.inactive();
-          job.save(next);
-        } else {
-          next(null, job);
-        }
-      } else {
-        next(null, job);
-      }
+    function ensureSingleUniqueJob(job, next) {
+      ensureUniqueJob(job, next);
     }
 
   ], function (error, job) {

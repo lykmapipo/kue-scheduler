@@ -116,7 +116,7 @@ describe('Queue#schedule', function () {
         //increament run counts
         runCount++;
 
-        jshint camelcase:false 
+        /*jshint camelcase:false*/
         expect(job.id).to.exist;
         expect(job.type).to.equal('unique_schedule');
         expect(parseInt(job._max_attempts)).to.equal(3);
