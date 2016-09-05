@@ -7,28 +7,29 @@ var kue = require(path.join(__dirname, '..', '..', 'index'));
 var redis = kue.redis;
 var Queue;
 
-describe('Queue#redis messages', function() {
+describe('Queue#redis messages', function () {
 
-    before(function(done) {
-        Queue = kue.createQueue();
-        redis = redis.createClient();
+  before(function (done) {
+    Queue = kue.createQueue();
+    redis = redis.createClient();
+    done();
+  });
+
+  after(function (done) {
+    Queue.shutdown(done);
+  });
+
+  it('should be able to filter unrelated redis published messages',
+    function (done) {
+
+      Queue.on('scheduler unknown job expiry key', function (message) {
+
+        expect(Queue._isJobExpiryKey(message)).to.be.false;
+
         done();
-    });
+      });
 
-    after(function(done) {
-        Queue.shutdown(done);
-    });
-
-    it('should be able to filter unrelated redis published messages', function(done) {
-
-        Queue.on('scheduler unknown job expiry key', function(message) {
-
-            expect(Queue._isJobExpiryKey(message)).to.be.false;
-
-            done();
-        });
-
-        redis.publish('__keyevent@0__:expired', 'message');
+      redis.publish('__keyevent@0__:expired', 'message');
     });
 
 });
