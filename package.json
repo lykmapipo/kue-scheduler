@@ -51,24 +51,24 @@
     "github": "https://github.com/elyas-bhy"
   }],
   "dependencies": {
-    "async": "^1.5.0",
-    "cron": "^1.0.9",
-    "date.js": "^0.2.1",
-    "human-interval": "^0.1.5",
-    "kue": "^0.11.0",
+    "async": "^1.5.2",
+    "cron": "^1.1.0",
+    "date.js": "^0.2.2",
+    "human-interval": "^0.1.6",
+    "kue": "^0.11.1",
     "kue-unique": "^0.1.4",
     "lodash": "^3.10.1",
     "node-uuid": "^1.4.7",
     "redlock": "^2.0.0"
   },
   "devDependencies": {
-    "chai": "^3.4.1",
-    "faker": "^3.0.1",
-    "grunt": "^0.4.5",
-    "grunt-contrib-jshint": "^0.11.3",
+    "chai": "^3.5.0",
+    "faker": "^3.1.0",
+    "grunt": "^1.0.1",
+    "grunt-contrib-jshint": "^1.0.0",
     "grunt-mocha-test": "^0.12.7",
-    "jshint-stylish": "^2.1.0",
-    "mocha": "^2.3.4",
-    "moment": "^2.10.6"
+    "jshint-stylish": "^2.2.1",
+    "mocha": "^3.0.2",
+    "moment": "^2.14.1"
   }
 }
