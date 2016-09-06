@@ -1,4 +1,4 @@
-# kue-scheduler
+# kue-scheduler(Unstable)
 
 [![Build Status](https://travis-ci.org/lykmapipo/kue-scheduler.svg?branch=master)](https://travis-ci.org/lykmapipo/kue-scheduler)
 [![Dependency Status](https://img.shields.io/david/lykmapipo/kue-scheduler.svg?style=flat)](https://david-dm.org/lykmapipo/kue-scheduler)
@@ -187,7 +187,7 @@ var Queue = kue.createQueue();
 Queue.enableExpiryNotifications();
 ```
 
-### `every(interval, job)`
+### `every(interval, job, [done])`
 Runs a given `job instance` every after a given `interval`. If `unique key` is provided only single instance job will exists otherwise on every run new job istance will be used.
 
 `interval` can either be a [human-interval](https://github.com/rschmukler/human-interval) `String` format or a [cron](https://github.com/ncb000gt/node-cron) `String` format.
