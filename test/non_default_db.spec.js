@@ -6,31 +6,8 @@ var _ = require('lodash');
 var path = require('path');
 var kue = require(path.join(__dirname, '..', 'index'));
 var faker = require('faker');
-var async = require('async');
 var Queue;
 var redisPublishClient;
-
-//TODO: Clean up the cleanup.
-
-//redis client for database cleanups
-var redisCleanUpClient = kue.redis.createClientFactory({
-  redis: {
-    db: 2
-  }
-});
-
-function cleanup(callback) {
-  redisCleanUpClient
-    .keys('q*', function (error, rows) {
-      if (error) {
-        callback(error);
-      } else {
-        async.each(rows, function (row, next) {
-          redisCleanUpClient.del(row, next);
-        }, callback);
-      }
-    });
-}
 
 describe('Queue non-default database', function () {
 
@@ -44,9 +21,9 @@ describe('Queue non-default database', function () {
     done();
   });
 
-  afterEach(function (done) {
-    Queue.shutdown(function () {
-      cleanup(done);
+  after(function (done) {
+    Queue.clear(function ( /*error,results*/ ) {
+      Queue.shutdown(done);
     });
   });
 

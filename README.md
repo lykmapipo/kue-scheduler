@@ -1,4 +1,4 @@
-# kue-scheduler(Unstable)
+# kue-scheduler
 
 [![Build Status](https://travis-ci.org/lykmapipo/kue-scheduler.svg?branch=master)](https://travis-ci.org/lykmapipo/kue-scheduler)
 [![Dependency Status](https://img.shields.io/david/lykmapipo/kue-scheduler.svg?style=flat)](https://david-dm.org/lykmapipo/kue-scheduler)
@@ -9,6 +9,8 @@ A job scheduler utility for [kue](https://github.com/Automattic/kue), backed by 
 Scheduling API is heavily inspired and borrowed from [agenda](https://github.com/rschmukler/agenda) and others.
 
 *Note!: expiry key notification are now enabled by default, if provided kue options has a permission to do so unless explicit disabled by passing `skipConfig` option when creating `kue` instance*
+
+*Note!: kue-scheduler v0.6.0 is a refactored version of previous kue-scheduler to allow redis data structure and schedule queue best practice. API is the same but some of internal working may not work as previous ones*
 
 ## Requirements
 - Redis 2.8.0 or higher.

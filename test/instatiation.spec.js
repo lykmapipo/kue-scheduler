@@ -10,8 +10,10 @@ var Queue;
 describe('Queue Job Scheduler & Listener', function () {
 
   afterEach(function (done) {
-    Queue.shutdown(done);
-    Queue = null;
+    Queue.clear(function ( /*error,results*/ ) {
+      Queue.shutdown(done);
+      Queue = null;
+    });
   });
 
   it('should be able to instantiate kue-scheduler with custom options',

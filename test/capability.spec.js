@@ -20,7 +20,9 @@ describe('Queue Scheduling Capabilities', function () {
   });
 
   after(function (done) {
-    Queue.shutdown(done);
+    Queue.clear(function ( /*error,results*/ ) {
+      Queue.shutdown(done);
+    });
   });
 
 

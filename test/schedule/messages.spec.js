@@ -16,7 +16,9 @@ describe('Queue#redis messages', function () {
   });
 
   after(function (done) {
-    Queue.shutdown(done);
+    Queue.clear(function ( /*error,results*/ ) {
+      Queue.shutdown(done);
+    });
   });
 
   it('should be able to filter unrelated redis published messages',
