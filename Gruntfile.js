@@ -15,7 +15,7 @@ module.exports = function (grunt) {
           timeout: 20000
         },
         // src: ['test/**/*.js']
-        src: ['test/schedule/every.spec.js']
+        src: ['test/schedule/schedule.spec.js']
       }
     },
     jshint: {

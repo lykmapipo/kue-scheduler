@@ -13,11 +13,13 @@ describe('Queue#schedule', function () {
 
   beforeEach(function (done) {
     Queue = kue.createQueue();
-    done();
+    Queue.clear(done);
   });
 
   afterEach(function (done) {
-    Queue.shutdown(done);
+    Queue.clear(function ( /*error,results*/ ) {
+      Queue.shutdown(done);
+    });
   });
 
   it('should be a function', function (done) {
@@ -202,29 +204,28 @@ describe('Queue#schedule', function () {
       Queue.once('schedule error', function (error) {
 
         expect(error.message).to.be.equal(
-          'Invalid number of parameters');
+          'Missing Schedule Interval');
+
+        done();
+      });
+
+      Queue.schedule(undefined, undefined);
+
+    });
+
+  it(
+    'should be able to emit `schedule error` if job is not given',
+    function (done) {
+
+      Queue.once('schedule error', function (error) {
+
+        expect(error.message).to.be.equal(
+          'Invalid Job Instance');
 
         done();
       });
 
       Queue.schedule('2 seconds from now', undefined);
-
-    });
-
-  it(
-    'should be able to emit `schedule error` if job is not an instance of Job',
-    function (done) {
-
-      Queue.once('schedule error', function (error) {
-
-        expect(error.message).to.be.equal('Invalid job type');
-
-        done();
-      });
-
-      Queue.schedule('2 seconds from now', {
-        name: faker.name.firstName()
-      });
 
     });
 
