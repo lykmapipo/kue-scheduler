@@ -418,6 +418,8 @@ Queue
 
 ##TODO
 - [ ] should be able to extend existing unique jobs with new job data
+- [ ] Fix clean to be able to clear every data including `q:<type>:jobs` which is saved during kue shutdown
+- [ ] Add schedule details on kue dashboard
 
 ## Testing
 * Clone this repository

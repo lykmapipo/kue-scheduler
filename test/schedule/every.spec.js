@@ -21,7 +21,7 @@ describe('Queue#every', function () {
     });
   });
 
-  it.skip('should be a function', function (done) {
+  it('should be a function', function (done) {
     expect(Queue.every).to.be.a('function');
     done();
   });
@@ -95,7 +95,7 @@ describe('Queue#every', function () {
       }, 6000);
     });
 
-  it.skip(
+  it(
     'should be able to schedule a unique job to run every 2 seconds from now',
     function (done) {
 
@@ -137,16 +137,9 @@ describe('Queue#every', function () {
       Queue.on('schedule success', function (job) {
         if (job.type === 'unique_every') {
           /*jshint camelcase:false */
-          expect(job.id).to.exist;
           expect(job.type).to.equal('unique_every');
           expect(parseInt(job._max_attempts)).to.equal(3);
           expect(job.data.to).to.equal(data.to);
-          expect(job.data.schedule).to.equal('RECCUR');
-          expect(job.data.expiryKey).to.equal(
-            'q:scheduler:every_mail');
-          expect(job.data.dataKey).to.equal(
-            'q:scheduler:data:every_mail');
-
           expect(job._backoff).to.eql(backoff);
           expect(parseInt(job._priority)).to.equal(0);
           /*jshint camelcase:true */
@@ -162,16 +155,16 @@ describe('Queue#every', function () {
 
       Queue.every('2 seconds', job);
 
-      //wait for two jobs to be runned
+      //wait for two runtimes of the same job instance to be runned
       setTimeout(function () {
         expect(runCount).to.equal(2);
-        //var ids = _.map(jobs, 'id');
-        //expect(ids[0]).to.equal(ids[1]);
-        Queue.remove({ unique: 'every_mail' }, done);
+        var ids = _.map(jobs, 'id');
+        expect(ids[0]).to.equal(ids[1]);
+        done();
       }, 6005);
     });
 
-  it.skip('should be able to remove scheduled unique job', function (done) {
+  it('should be able to remove scheduled unique job', function (done) {
 
     var data = {
       to: faker.internet.email()
@@ -225,15 +218,9 @@ describe('Queue#every', function () {
     Queue.on('schedule success', function (job) {
       if (job.type === 'removed_every') {
         /*jshint camelcase:false */
-        expect(job.id).to.exist;
         expect(job.type).to.equal('removed_every');
         expect(parseInt(job._max_attempts)).to.equal(3);
         expect(job.data.to).to.equal(data.to);
-        expect(job.data.schedule).to.equal('RECCUR');
-        expect(job.data.expiryKey).to.equal(
-          'q:scheduler:removed_email');
-        expect(job.data.dataKey).to.equal(
-          'q:scheduler:data:removed_email');
 
         expect(job._backoff).to.eql(backoff);
         expect(parseInt(job._priority)).to.equal(0);
@@ -254,40 +241,39 @@ describe('Queue#every', function () {
     setTimeout(function () {
       expect(runCount).to.equal(1);
       expect(_.map(jobs, 'id')).to.have.length(1);
-      Queue.remove({ unique: 'removed_email' }, done);
+      done();
     }, 6000);
   });
 
-  it.skip(
-    'should be able to emit `schedule error` if schedule or job is not given',
+  it(
+    'should be able to emit `schedule error` if schedule interval not given',
     function (done) {
 
       Queue.once('schedule error', function (error) {
 
         expect(error.message).to.be.equal(
-          'Invalid number of parameters');
+          'Missing Schedule Interval');
+
+        done();
+      });
+
+      Queue.every(undefined, undefined);
+
+    });
+
+  it(
+    'should be able to emit `schedule error` if job instance is not given',
+    function (done) {
+
+      Queue.once('schedule error', function (error) {
+
+        expect(error.message).to.be.equal(
+          'Invalid Job Instance');
 
         done();
       });
 
       Queue.every('2 seconds', undefined);
-
-    });
-
-  it.skip(
-    'should be able to emit `schedule error` if job is not an instance of Job',
-    function (done) {
-
-      Queue.once('schedule error', function (error) {
-
-        expect(error.message).to.be.equal('Invalid job type');
-
-        done();
-      });
-
-      Queue.every('2 seconds', {
-        name: faker.name.firstName()
-      });
 
     });
 
