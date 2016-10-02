@@ -815,13 +815,7 @@ Queue.prototype.every = function (interval, job, done) {
       } else {
         next(null, job);
       }
-    }.bind(this),
-
-    function saveJob(job, next) {
-      job.save(function (error, existJob) {
-        next(error, existJob || job);
-      });
-    }
+    }.bind(this)
 
   ], function (error, job) {
     //fire schedule error event
