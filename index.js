@@ -834,7 +834,7 @@ Queue.prototype.every = function (interval, job, done) {
     }
 
     //invoke callback if provided
-    if (done && _.isFuction(done)) {
+    if (done && _.isFunction(done)) {
       done(error, job);
     }
 
