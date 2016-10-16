@@ -441,7 +441,7 @@ Queue.prototype._buildJob = function (jobDefinition, done) {
           this.createJob(jobDefinition.type, jobDefinition.data);
 
         //apply all job attributes into kue job instance
-        // except for `progress`
+        // except for `progress` and `error`
         _.without(_.keys(jobDefinition), 'progress', 'error')
           .forEach(function (attribute) {
             //if given job definition attribute
