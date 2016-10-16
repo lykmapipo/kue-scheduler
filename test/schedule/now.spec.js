@@ -200,7 +200,7 @@ describe('Queue#now', function () {
             ]);
 
           expect(_.values(uniqueJobs))
-            .to.include.members([String(ids[0])]);
+            .to.include.members([ids[0]]);
 
           expect(runCount).to.equal(2);
           expect(ids[0]).to.be.equal(ids[1]);
