@@ -1146,6 +1146,9 @@ kue.createQueue = function (options) {
 
   //a redis client to listen for key expiry
   queue._listener = redis.createClient();
+  queue._listener.on('ready', function() {
+     queue.emit('ready');
+  });
 
   // If this was done manually
   if (!options.skipConfig) {
