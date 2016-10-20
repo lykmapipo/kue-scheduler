@@ -84,6 +84,35 @@ Queue.process('unique_every', function(job, done) {
 });
 ```
 
+### Schedule a unique job to run every after specified time interval, using cron and timezone
+
+
+Example `schedule a job to run every 10 seconds from now`
+see http://momentjs.com/timezone/ for timezones names.
+
+```js
+var kue = require('kue-scheduler');
+var Queue = kue.createQueue();
+
+//create a job instance
+var job = Queue
+            .createJob('unique_every', { timezone: 'Europe/Amsterdam' })
+            .attempts(3)
+            .backoff(backoff)
+            .priority('normal')
+            .unique('unique_every');
+
+//schedule it to run every 2 seconds
+Queue.every('*/10 * * * * *', job);
+
+
+//somewhere process your scheduled jobs
+Queue.process('unique_every', function(job, done) {
+    ...
+    done();
+});
+```
+
 ### Schedule a non unique job to run only once after specified interval elapsed
 Use this if you want to maintain different(multiple) job instances on every run
 

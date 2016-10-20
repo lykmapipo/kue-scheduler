@@ -494,7 +494,7 @@ Queue.prototype._computeNextRunTime = function (jobData, done) {
 
   //grab job reccur interval
   var interval = jobData.reccurInterval;
-
+  var timezone = jobData.data ? jobData.data.timezone : undefined;
 
   async.parallel({
     //compute next run from cron interval
@@ -505,7 +505,7 @@ Queue.prototype._computeNextRunTime = function (jobData, done) {
           jobData.lastRun ? new Date(jobData.lastRun) : new Date();
 
         //compute next date from the cron interval
-        var cronTime = new CronTime(interval);
+        var cronTime = new CronTime(interval, timezone);
         var nextRun = cronTime._getNextDateFrom(lastRun);
 
         // Handle cronTime giving back the same date
