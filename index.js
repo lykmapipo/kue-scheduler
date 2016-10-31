@@ -1142,7 +1142,7 @@ kue.createQueue = function (options) {
 
   //instantiate redlock instance
   //TODO why not use warlock which is already used in kue?
-  queue._redlock = new Redlock([queue._scheduler], { retryCount: 0 });
+  queue._redlock = new Redlock([queue._scheduler], { retryCount: 3, retryDelay: 1000 });
 
   //a redis client to listen for key expiry
   queue._listener = redis.createClient();
