@@ -5,7 +5,7 @@ var expect = require('chai').expect;
 var async = require('async');
 var faker = require('faker');
 var path = require('path');
-var uuid = require('node-uuid');
+var uuid = require('uuid');
 var kue = require(path.join(__dirname, '..', 'index'));
 var Queue;
 var options = {

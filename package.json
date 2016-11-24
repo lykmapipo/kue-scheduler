@@ -65,8 +65,8 @@
     "kue": "^0.11.1",
     "kue-unique": "^1.0.1",
     "lodash": "^4.15.0",
-    "node-uuid": "^1.4.7",
-    "redlock": "^2.0.0"
+    "redlock": "^2.0.0",
+    "uuid": "^3.0.0"
   },
   "devDependencies": {
     "chai": "^3.5.0",
