@@ -1,5 +1,5 @@
-# SCHEDULES
+# Schedules
 
-## NOW PSEUDOCODE
-## SCHEDULE PSEUDOCODE
-## EVERY PSEUDOCODE
+## Now Pseudocode
+## Schedule Pseudocode
+## Every Pseudocode
