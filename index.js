@@ -305,7 +305,7 @@ Queue.prototype._getJobDataKey = function (uuid) {
  */
 Queue.prototype._getJobLockKey = function (uuid) {
   //this refer to kue Queue instance context
-  var key = `${this.options.prefix}:scheduler:${lockKey}:${uuid}`;
+  var key = this.options.prefix + ':scheduler:' + lockKey + ':' + uuid;
 
   return key;
 };
@@ -1139,7 +1139,7 @@ kue.createQueue = function (options) {
 
   //create job expiry key RegEx validator
   queue._jobExpiryKeyValidator =
-    new RegExp(`^${queue.options.prefix}:scheduler:(?!${lockKey})`);
+    new RegExp('^' + queue.options.prefix + ':scheduler:(?!' + lockKey + ')');
 
   //a redis client for scheduling key expiry
   queue._scheduler = redis.createClient();
