@@ -27,6 +27,10 @@ var humanInterval = require('human-interval');
 var CronTime = require('cron').CronTime;
 var Redlock = require('redlock');
 
+//------------------------------------------------------------------------------
+// constants
+//------------------------------------------------------------------------------
+var lockKey = 'locks';
 
 //------------------------------------------------------------------------------
 // utility helpers
@@ -301,7 +305,7 @@ Queue.prototype._getJobDataKey = function (uuid) {
  */
 Queue.prototype._getJobLockKey = function (uuid) {
   //this refer to kue Queue instance context
-  var key = this.options.prefix + ':scheduler:locks:' + uuid;
+  var key = `${this.options.prefix}:scheduler:${lockKey}:${uuid}`;
 
   return key;
 };
@@ -321,7 +325,7 @@ Queue.prototype._saveJobData = function (jobDataKey, jobData, done) {
   //TODO make use of redis hash i.e redis.hmset(<key>, <data>);
   this
     ._scheduler
-    .set(jobDataKey, JSON.stringify(jobData), function (error /*, response*/ ) {
+    .set(jobDataKey, JSON.stringify(jobData), function (error /*, response*/) {
       done(error, jobData);
     });
 };
@@ -390,33 +394,33 @@ Queue.prototype._buildJob = function (jobDefinition, done) {
   //this refer to kue Queue instance context
 
   async.parallel({
-      isDefined: function (next) {
-        //is job definition provided
-        var isObject = _.isPlainObject(jobDefinition);
-        if (!isObject) {
-          next(new Error('Invalid job definition'));
-        } else {
-          next(null, true);
-        }
-      },
-      isValid: function (next) {
-        //check job for required attributes
-        //
-        //a valid job must have a type and
-        //associated data
-        var isValidJob = _.has(jobDefinition, 'type') &&
-          (
-            _.has(jobDefinition, 'data') &&
-            _.isPlainObject(jobDefinition.data)
-          );
-
-        if (!isValidJob) {
-          next(new Error('Missing job type or data'));
-        } else {
-          next(null, true);
-        }
+    isDefined: function (next) {
+      //is job definition provided
+      var isObject = _.isPlainObject(jobDefinition);
+      if (!isObject) {
+        next(new Error('Invalid job definition'));
+      } else {
+        next(null, true);
       }
     },
+    isValid: function (next) {
+      //check job for required attributes
+      //
+      //a valid job must have a type and
+      //associated data
+      var isValidJob = _.has(jobDefinition, 'type') &&
+        (
+          _.has(jobDefinition, 'data') &&
+          _.isPlainObject(jobDefinition.data)
+        );
+
+      if (!isValidJob) {
+        next(new Error('Missing job type or data'));
+      } else {
+        next(null, true);
+      }
+    }
+  },
     function finish(error, validations) {
       //is not well formatted job
       //back-off
@@ -1078,7 +1082,7 @@ var shutdown = Queue.prototype.shutdown;
  * @return {Queue} for chaining
  * @api public
  */
-Queue.prototype.shutdown = function ( /*fn, timeout, type*/ ) {
+Queue.prototype.shutdown = function ( /*fn, timeout, type*/) {
   //this refer to kue Queue instance context
 
   //TODO ensure all client shutdown with waiting delay
@@ -1135,7 +1139,7 @@ kue.createQueue = function (options) {
 
   //create job expiry key RegEx validator
   queue._jobExpiryKeyValidator =
-    new RegExp('^' + queue.options.prefix + ':scheduler:');
+    new RegExp(`^${queue.options.prefix}:scheduler:(?!${lockKey})`);
 
   //a redis client for scheduling key expiry
   queue._scheduler = redis.createClient();
@@ -1175,7 +1179,7 @@ kue.createQueue = function (options) {
  */
 Queue.prototype.remove = Queue.prototype.removeJob = function (criteria, done) {
   //normalize callback
-  done = done || function noop() {};
+  done = done || function noop() { };
 
   //compute criteria and job instance
   async.parallel({
