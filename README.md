@@ -166,6 +166,33 @@ Queue.process('unique_shedule', function(job, done) {
 });
 ```
 
+### Schedule a unique job while handling redis disconnects
+
+```js
+var kue = require('kue-scheduler');
+var Queue = kue.createQueue();
+Queue.on('ready', function() {
+    // create a job instance inside the 'ready' signal,
+    // which will be called every time the redis is
+    // connected again and ready
+    var job = Queue
+                .createJob('unique_schedule', data)
+                .attempts(3)
+                .backoff(backoff)
+                .priority('normal')
+                .unique('unique_schedule');
+
+    // schedule it to run once 2 seconds from now
+    Queue.schedule('2 seconds from now', job);
+});
+
+//somewhere process your scheduled jobs
+Queue.process('unique_shedule', function(job, done) {
+    ...
+    done();
+});
+```
+
 
 ### Schedule a job to run now
 ```js
