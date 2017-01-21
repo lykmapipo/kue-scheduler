@@ -4,7 +4,7 @@
 [![Dependency Status](https://img.shields.io/david/lykmapipo/kue-scheduler.svg?style=flat)](https://david-dm.org/lykmapipo/kue-scheduler)
 [![npm version](https://badge.fury.io/js/kue-scheduler.svg)](https://badge.fury.io/js/kue-scheduler)
 
-A job scheduler utility for [kue](https://github.com/Automattic/kue), backed by [redis](http://redis.io) and built for [node.js](http://nodejs.org)
+A job scheduler utility for [kue](https://github.com/Automattic/kue), backed by [redis](http://redis.io) and built for [node.js](http://nodejs.org) with support of schedules restore on system restart.
 
 Scheduling API is heavily inspired and borrowed from [agenda](https://github.com/rschmukler/agenda) and others.
 
@@ -190,6 +190,28 @@ Queue.process('now', function(job, done) {
 });
 ```
 
+## Options
+`kue-scheduler` support all `kue` options with addition of the following
+
+- `restore:boolen` - tells `kue-scheduler` to try to restore schedules in case of restarts or other causes. By default its not enable. When enable use `restore error` and `restore success` queue events to communicate with the scheduler.
+
+Example
+```js
+var options = {
+        prefix: 'w',
+        redis: {
+          port: 6379,
+          host: '127.0.0.1',
+          db: 2
+        },
+        restore: true
+      };
+...
+
+Queue = kue.createQueue(options);
+
+```
+
 ## API
 
 ### `clear(done)`
@@ -338,8 +360,24 @@ Queue.remove({
 });
 ```
 
+### `restore(done)`
+Enforce `kue-scheduler` to restore schedules in cases that may cause your application to miss redis key expiry events. You may enable `restore` using options but in some scenario you may invoke `restore` by yourself.
+
+Example
+```js
+var kue = require('kue-scheduler');
+var Queue = kue.createQueue();
+
+//perform cleanup
+Queue.restore(fuction(error, schedules){
+    ...
+
+});
+```
+
+
 ## Events
-Currently the only way to interact with `kue-scheduler` is through its events. `kue-scheduler` fires `schedule error`, `schedule success`, `already scheduled`,`lock error`, `unlock error` and `scheduler unknown job expiry key` events.
+Currently the only way to interact with `kue-scheduler` is through its events. `kue-scheduler` fires `schedule error`, `schedule success`, `already scheduled`,`lock error`, `unlock error`, `restore success`, `restore error` and `scheduler unknown job expiry key` events.
 
 ### `schedule error`
 Use it to interact with `kue-scheduler` to get notified when an error occur.
@@ -443,6 +481,30 @@ Queue
     .on('scheduler unknown job expiry key', function(message) {
 
         expect(Queue._isJobExpiryKey(message)).to.be.false;
+
+    });
+```
+
+### `restore error`
+Fired when `kue-scheduler` successfully restore previous schedules.
+
+```js
+Queue
+    .on('restore success', function() {
+    
+    ...
+
+    });
+```
+
+### `restore error`
+Fired when `kue-scheduler` failt to restore previous schedules.
+
+```js
+Queue
+    .on('restore error', function(error) {
+    
+    ...
 
     });
 ```
