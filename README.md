@@ -225,7 +225,7 @@ var scheduler = kue.createQueue({
 //in separate process create an instance that will process works
 var worker = kue.createQueue({
     restore:true,
-    worker:false
+    worker:true
 });
 worker.process(...);
 
