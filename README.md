@@ -212,6 +212,28 @@ Queue = kue.createQueue(options);
 
 ```
 
+- `worker:boolen` - tells `kue-scheduler` to listen and process job. Default to `true`. If set to `false` you need another `kue-scheduler` instance to process the scheduled jobs from othe process
+
+Example
+```js
+//create scheduler instance(process)
+var scheduler = kue.createQueue({
+    restore:true,
+    worker:false
+});
+
+//in separate process create an instance that will process works
+var worker = kue.createQueue({
+    restore:true,
+    worker:false
+});
+worker.process(...);
+
+...
+
+```
+
+
 ## API
 
 ### `clear(done)`

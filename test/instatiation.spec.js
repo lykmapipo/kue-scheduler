@@ -25,7 +25,8 @@ describe('Queue Job Scheduler & Listener', function () {
           host: '127.0.0.1',
           db: 2
         },
-        restore: false
+        restore: false,
+        worker: true
       };
       Queue = kue.createQueue(options);
 

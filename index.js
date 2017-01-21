@@ -1133,7 +1133,8 @@ kue.createQueue = function (options) {
       port: 6379,
       host: '127.0.0.1'
     },
-    restore: false
+    restore: false,
+    worker: true,
   }, options || {});
 
   //store passed options into Queue
@@ -1159,9 +1160,6 @@ kue.createQueue = function (options) {
     retryDelay: 1000
   });
 
-  //a redis client to listen for key expiry
-  queue._listener = redis.createClient();
-
   // If this was done manually
   if (!options.skipConfig) {
     //redis client to allow configurations commands
@@ -1171,9 +1169,16 @@ kue.createQueue = function (options) {
     queue.enableExpiryNotifications();
   }
 
-  //listen for job key expiry
-  //and schedule kue jobs to run
-  queue._subscribe();
+  //allow job expiry notification processing
+  //and make this queue instance operate as a worker too
+  if (options.worker) {
+    //a redis client to listen for key expiry
+    queue._listener = redis.createClient();
+
+    //listen for job key expiry
+    //and schedule kue jobs to run
+    queue._subscribe();
+  }
 
   //restore job schedules
   if (options.restore) {
