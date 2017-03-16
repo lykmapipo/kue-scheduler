@@ -234,16 +234,15 @@ worker.process(...);
 
 ```
 
-if you experience the following error: `ReplyError: ERR unknown command 'config'`, which will happen if you're using a redis instance with the config command disabled (AWS Elasticache for example) you must call createQueue with the skipConfig option and manually ensure that the `notify-keyspace-events` configuration key is set to `Ex`. 
-
+- `skipConfig:boolen` - tells `kue-scheduler` to skip enabling enabling key expiry notification.
 Example
 ```js
-//create scheduler instance(process) without it updating the redis config.
+//create scheduler instance(process) with skipConfig
 var scheduler = kue.createQueue({
-    skipConfig: true
+    skipConfig:true
 });
 ```
-
+*Note! if you experience the following error: `ReplyError: ERR unknown command 'config'`, which will happen if you're using a redis instance with the config command disabled (AWS Elasticache for example) you must call createQueue with the `skipConfig` option and manually ensure that the `notify-keyspace-events` configuration key is set to `Ex`.*
 
 ## API
 
