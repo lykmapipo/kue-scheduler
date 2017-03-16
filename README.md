@@ -233,6 +233,15 @@ worker.process(...);
 
 ```
 
+- `skipConfig:boolen` - tells `kue-scheduler` to skip enabling enabling key expiry notification.
+Example
+```js
+//create scheduler instance(process) with skipConfig
+var scheduler = kue.createQueue({
+    skipConfig:true
+});
+``` 
+
 
 ## API
 
