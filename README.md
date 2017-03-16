@@ -199,6 +199,7 @@ Example
 ```js
 var options = {
         prefix: 'w',
+        skipConfig: false,
         redis: {
           port: 6379,
           host: '127.0.0.1',
@@ -240,8 +241,8 @@ Example
 var scheduler = kue.createQueue({
     skipConfig:true
 });
-``` 
-
+```
+*Note! if you experience the following error: `ReplyError: ERR unknown command 'config'`, which will happen if you're using a redis instance with the config command disabled (AWS Elasticache for example) you must call createQueue with the `skipConfig` option and manually ensure that the `notify-keyspace-events` configuration key is set to `Ex`.*
 
 ## API
 
