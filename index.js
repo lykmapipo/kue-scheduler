@@ -1480,7 +1480,7 @@ Queue.prototype.restore = function (done) {
       schedules = _.compact(schedules);
 
       //re-schedule in parallel
-      async.parallel(schedules, done);
+      async.parallel(schedules, done.bind(this));
 
     }
 
