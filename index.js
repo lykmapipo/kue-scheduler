@@ -1096,22 +1096,22 @@ Queue.prototype.shutdown = function ( /*fn, timeout, type*/ ) {
   //TODO remove all listeners
 
   //stop processing new expiry messages
-  this._listener.removeAllListeners('message');
+  if (this._listener) {
+    this._listener.removeAllListeners('message');
 
-  //unsubscribe to key expiry events
-  this._listener.unsubscribe(this._getExpiredSubscribeKey());
+    //unsubscribe to key expiry events
+    this._listener.unsubscribe(this._getExpiredSubscribeKey());
+    this._listener.quit();
+  }
 
-  //close _scheduler,
-  // _lister and
-  // _cli redis connctions
-  this._listener.quit();
+  //close _scheduler, and _cli redis connctions
   this._scheduler.quit();
   if (this._cli) {
     this._cli.quit();
   }
 
   //then call previous Queue shutdown
-  shutdown.apply(this, arguments);
+  return shutdown.apply(this, arguments);
 };
 
 
