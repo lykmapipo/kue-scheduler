@@ -57,7 +57,8 @@ var lockKey = 'locks';
          job.state() === 'failed');
      var now = new Date();
      //assuming updated_at is in the past or now
-     var timeSinceLastUpdate = now.getTime() - job.updated_at; // jshint ignore:line updated_at is a built-in from kue.
+     // updated_at is a built-in from kue.
+     var timeSinceLastUpdate = now.getTime() - job.updated_at; // jshint ignore:line
      var arbitraryThreshold = job.data.ttl + (job.data.ttl/2);
      var isStaleJob =
        (job.state() === 'active' &&
