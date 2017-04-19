@@ -39,39 +39,47 @@ var lockKey = 'locks';
 /**
  * @function
  * @description ensure only a single job instance
- *              
+ *
  *              This is a case when working on reccur job(s) and only one instance
- *              of a job is supposed to exists and only current run history is 
+ *              of a job is supposed to exists and only current run history is
  *              of importance than previous running
- *              
+ *
  * @param  {Job}   job  valid job instance
  * @param  {Function} done a callback to invoke on success or failure
  * @return {Job}        valid job instance
  * @private
  */
-function ensureUniqueJob(job, done) {
+ function ensureUniqueJob (job, done) {
+   if (job && job.alreadyExist) {
+     // check if job is complete or failed
+     var isCompletedOrFailedJob =
+       (job.state() === 'complete' ||
+         job.state() === 'failed');
+     var now = new Date();
+     //assuming updated_at is in the past or now
+     var timeSinceLastUpdate = now.getTime() - job.updated_at;
+     var arbitraryThreshold = job.data.ttl + (job.data.ttl/2);
+     var isStaleJob =
+       (job.state() === 'active' &&
+         timeSinceLastUpdate > arbitraryThreshold
+       );
 
-  if (job && job.alreadyExist) {
-    //check if job is complete or failed
-    var isCompletedOrFailedJob =
-      (job.state() === 'complete' ||
-        job.state() === 'failed');
 
-    if (isCompletedOrFailedJob) {
-      //resave job for next run
-      //
-      //NOTE!: We inactivate job to allow kue to queue the same job for next run.
-      //This will ensure only a single job instance will be used for the next run.
-      //This is the case for unique job behaviour.
-      job.inactive();
-      job.save(done);
-    } else {
-      done(null, job);
-    }
-  } else {
-    done(null, job);
-  }
-}
+
+     if (isCompletedOrFailedJob || isStaleJob) {
+       // resave job for next run
+       //
+       // NOTE!: We inactivate job to allow kue to queue the same job for next run.
+       // This will ensure only a single job instance will be used for the next run.
+       // This is the case for unique job behaviour.
+         job.inactive();
+         job.save(done);
+       }
+     else {
+         done(null, job);
+     }
+   }
+ }
 
 
 
@@ -663,9 +671,9 @@ Queue.prototype._onJobKeyExpiry = function (jobExpiryKey) {
         function (error, job) {
           lock.unlock(function (err) {
             if (err) {
-              // couldn't talk to redis to unlock the lock, 
+              // couldn't talk to redis to unlock the lock,
               // which will release at the 1s ttl.
-              // 
+              //
               //notity error to queue instance
               this.emit('unlock error', error);
             }
@@ -1401,7 +1409,7 @@ Queue.prototype.clear =
  * @since  0.7.0
  */
 Queue.prototype._getAllJobData = function (done) {
-  //key pattern to obtain all job data keys  
+  //key pattern to obtain all job data keys
   var keyPattern = [this.options.prefix, ':scheduler:data*'].join('');
 
   //obtain redis client
