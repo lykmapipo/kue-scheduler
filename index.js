@@ -39,11 +39,11 @@ var lockKey = 'locks';
 /**
  * @function
  * @description ensure only a single job instance
- *              
+ *
  *              This is a case when working on reccur job(s) and only one instance
- *              of a job is supposed to exists and only current run history is 
+ *              of a job is supposed to exists and only current run history is
  *              of importance than previous running
- *              
+ *
  * @param  {Job}   job  valid job instance
  * @param  {Function} done a callback to invoke on success or failure
  * @return {Job}        valid job instance
@@ -56,8 +56,16 @@ function ensureUniqueJob(job, done) {
     var isCompletedOrFailedJob =
       (job.state() === 'complete' ||
         job.state() === 'failed');
-
-    if (isCompletedOrFailedJob) {
+    var now = new Date();
+    //assuming updated_at is in the past or now
+    // updated_at is a built-in from kue.
+    var timeSinceLastUpdate = now.getTime() - job.updated_at; // jshint ignore:line
+    var arbitraryThreshold = job.data.ttl + (job.data.ttl/2);
+    var isStaleJob =
+    (job.state() === 'active' &&
+        timeSinceLastUpdate > arbitraryThreshold
+      );
+    if (isCompletedOrFailedJob|| isStaleJob) {
       //resave job for next run
       //
       //NOTE!: We inactivate job to allow kue to queue the same job for next run.
@@ -72,7 +80,6 @@ function ensureUniqueJob(job, done) {
     done(null, job);
   }
 }
-
 
 
 /**
@@ -663,9 +670,9 @@ Queue.prototype._onJobKeyExpiry = function (jobExpiryKey) {
         function (error, job) {
           lock.unlock(function (err) {
             if (err) {
-              // couldn't talk to redis to unlock the lock, 
+              // couldn't talk to redis to unlock the lock,
               // which will release at the 1s ttl.
-              // 
+              //
               //notity error to queue instance
               this.emit('unlock error', error);
             }
@@ -1401,7 +1408,7 @@ Queue.prototype.clear =
  * @since  0.7.0
  */
 Queue.prototype._getAllJobData = function (done) {
-  //key pattern to obtain all job data keys  
+  //key pattern to obtain all job data keys
   var keyPattern = [this.options.prefix, ':scheduler:data*'].join('');
 
   //obtain redis client
