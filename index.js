@@ -1472,7 +1472,7 @@ Queue.prototype.restore = function (done) {
       var schedules = _.map(data, function (schedule) {
 
         return function (next) {
-          scheduleEveryJob.call(this, schedule, schedule.uuid, next);
+          scheduleEveryJob.call(this, schedule, this._generateJobUUID(schedule), next);
         }.bind(this);
 
       }.bind(this));
