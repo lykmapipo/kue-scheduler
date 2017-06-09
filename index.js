@@ -280,16 +280,9 @@ Queue.prototype._getJobUUID = function (key) {
 
   var splits = key.split(':');
 
-  //deduce job uuid from job expiry key
-  //kue:scheduler:<jobExpirykey>
-  if (splits.length === 3) {
-    uuid = splits[2];
-  }
-
-  //deduce job uuid from job data key
-  //kue:scheduler:data:<jobExpirykey>
-  if (splits.length === 4) {
-    uuid = splits[3];
+  splits = _.filter(splits, function(o) { return o !== ''; });
+  if(splits.length > 0){
+    uuid = splits[splits.length - 1];
   }
 
   return uuid;
@@ -596,6 +589,7 @@ Queue.prototype._onJobKeyExpiry = function (jobExpiryKey) {
 
   //generate lock key for specific job
   var jobLockKey = this._getJobLockKey(this._getJobUUID(jobExpiryKey));
+
 
   //obtain lock to ensure only one worker process expiry event
   //TODO add specs to test for lock lifetime
