@@ -102,7 +102,7 @@ var job = Queue
             .priority('normal')
             .unique('unique_every');
 
-//schedule it to run every 2 seconds
+//schedule it to run every 10 seconds
 Queue.every('*/10 * * * * *', job);
 
 
