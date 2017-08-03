@@ -24,8 +24,8 @@ var async = require('async');
 var datejs = require('date.js');
 var uuid = require('uuid');
 var humanInterval = require('human-interval');
+var warlock = require('node-redis-warlock');
 var CronTime = require('cron').CronTime;
-var Redlock = require('redlock');
 
 //------------------------------------------------------------------------------
 // constants
@@ -96,11 +96,17 @@ function scheduleEveryJob(jobDefinition, jobUUID, done) {
 
     function obtainLock(next) {
       //TODO expose lock duration as configurations
-      this._redlock.lock(this._getJobLockKey(jobUUID), 1000, next);
+      this._warlock.lock(this._getJobLockKey(jobUUID), 1000, function (err, unlock) {
+        if (!unlock) {
+          next(new Error('Job already locked, skipping...'));
+        } else {
+          next(err, unlock);
+        }
+      });
 
     }.bind(this),
 
-    function prepareNextRun(lock, next) {
+    function prepareNextRun(unlock, next) {
 
       async.parallel({
         //compute job expiry key
@@ -119,12 +125,12 @@ function scheduleEveryJob(jobDefinition, jobUUID, done) {
         }.bind(this)
 
       }, function (error, results) {
-        next(error, lock, results);
+        next(error, unlock, results);
       });
 
     }.bind(this),
 
-    function saveJobData(lock, results, next) {
+    function saveJobData(unlock, results, next) {
       //compute job shedule key expiry time
       var now = new Date();
       var delay = results.nextRunTime.getTime() - now.getTime();
@@ -140,23 +146,23 @@ function scheduleEveryJob(jobDefinition, jobUUID, done) {
 
       //save job data
       this._saveJobData(results.jobDataKey, jobDefinition, function (error) {
-        next(error, lock, delay, results.jobExpiryKey, jobDefinition);
+        next(error, unlock, delay, results.jobExpiryKey, jobDefinition);
       });
 
     }.bind(this),
 
     //schedule job for next run
-    function setJobKeyExpiry(lock, delay, jobExpiryKey, jobDefinition, next) {
+    function setJobKeyExpiry(unlock, delay, jobExpiryKey, jobDefinition, next) {
       //save key if not exists and wait for it to expiry
       this._scheduler.set(jobExpiryKey, jobExpiryKey, 'PX', delay, 'NX',
         function (error) {
-          next(error, lock, jobDefinition);
+          next(error, unlock, jobDefinition);
         });
 
     }.bind(this),
 
-    function releaseLock(lock, jobDefinition, next) {
-      lock.unlock(function (error) {
+    function releaseLock(unlock, jobDefinition, next) {
+      unlock(function (error) {
         next(error, jobDefinition);
       });
     }
@@ -593,8 +599,7 @@ Queue.prototype._onJobKeyExpiry = function (jobExpiryKey) {
 
   //obtain lock to ensure only one worker process expiry event
   //TODO add specs to test for lock lifetime
-  this._redlock.lock(jobLockKey, 1000, function (err, lock) {
-
+  this._warlock.lock(jobLockKey, 1000, function (err, unlock) {
     //handle lock error
     if (err) {
       //notity error to queue instance
@@ -602,7 +607,7 @@ Queue.prototype._onJobKeyExpiry = function (jobExpiryKey) {
     }
 
     //continue to process event
-    else {
+    else if (unlock) {
 
       async.waterfall(
         [
@@ -662,15 +667,17 @@ Queue.prototype._onJobKeyExpiry = function (jobExpiryKey) {
           }
         ],
         function (error, job) {
-          lock.unlock(function (err) {
-            if (err) {
-              // couldn't talk to redis to unlock the lock,
-              // which will release at the 1s ttl.
-              //
-              //notity error to queue instance
-              this.emit('unlock error', error);
-            }
-          });
+          if (unlock) {
+            unlock(function (err) {
+              if (err) {
+                // couldn't talk to redis to unlock the lock,
+                // which will release at the 1s ttl.
+                //
+                //notity error to queue instance
+                this.emit('unlock error', error);
+              }
+            });
+          }
           if (error) {
             this.emit('schedule error', error);
           } else if (job.alreadyExist) {
@@ -681,7 +688,7 @@ Queue.prototype._onJobKeyExpiry = function (jobExpiryKey) {
         }.bind(this));
     }
 
-  }.bind(this)); //end redlock
+  }.bind(this)); // end warlock
 };
 
 
@@ -1154,12 +1161,7 @@ kue.createQueue = function (options) {
   //a redis client for scheduling key expiry
   queue._scheduler = redis.createClient();
 
-  //instantiate redlock instance
-  //TODO why not use warlock which is already used in kue?
-  queue._redlock = new Redlock([queue._scheduler], {
-    retryCount: 3,
-    retryDelay: 1000
-  });
+  queue._warlock = warlock(queue._scheduler);
 
   // If this was done manually
   if (!options.skipConfig) {
