@@ -1,6 +1,6 @@
 {
   "name": "kue-scheduler",
-  "version": "0.7.3",
+  "version": "0.7.4",
   "description": "A job scheduler utility for kue, backed by redis and built for node.js with support of schedules restore on system restart",
   "main": "index.js",
   "scripts": {
@@ -33,44 +33,51 @@
     "url": "https://github.com/lykmapipo/kue-scheduler/issues"
   },
   "homepage": "https://github.com/lykmapipo/kue-scheduler",
-  "contributors": [{
-    "name": "lykmapipo",
-    "github": "https://github.com/lykmapipo"
-  }, {
-    "name": "keenondrums",
-    "github": "https://github.com/keenondrums"
-  }, {
-    "name": "throrin19",
-    "github": "https://github.com/throrin19"
-  }, {
-    "name": "KeKs0r",
-    "github": "https://github.com/KeKs0r"
-  }, {
-    "name": "risseraka",
-    "github": "https://github.com/risseraka"
-  }, {
-    "name": "elyas-bhy",
-    "github": "https://github.com/elyas-bhy"
-  }],
+  "contributors": [
+    {
+      "name": "lykmapipo",
+      "github": "https://github.com/lykmapipo"
+    },
+    {
+      "name": "keenondrums",
+      "github": "https://github.com/keenondrums"
+    },
+    {
+      "name": "throrin19",
+      "github": "https://github.com/throrin19"
+    },
+    {
+      "name": "KeKs0r",
+      "github": "https://github.com/KeKs0r"
+    },
+    {
+      "name": "risseraka",
+      "github": "https://github.com/risseraka"
+    },
+    {
+      "name": "elyas-bhy",
+      "github": "https://github.com/elyas-bhy"
+    }
+  ],
   "dependencies": {
-    "async": "^2.4.1",
+    "async": "^2.5.0",
     "cron": "^1.2.1",
     "date.js": "^0.3.1",
     "human-interval": "^0.1.6",
     "kue": "^0.11.6",
     "kue-unique": "^1.0.2",
     "lodash": "^4.17.4",
-    "redlock": "^3.0.0",
-    "uuid": "^3.0.1"
+    "node-redis-warlock": "^0.2.0",
+    "uuid": "^3.1.0"
   },
   "devDependencies": {
-    "chai": "^4.0.2",
+    "chai": "^4.1.0",
     "faker": "^4.1.0",
     "grunt": "^1.0.1",
     "grunt-contrib-jshint": "^1.1.0",
     "grunt-mocha-test": "^0.13.2",
     "jshint-stylish": "^2.2.1",
-    "mocha": "^3.4.2",
+    "mocha": "^3.5.0",
     "moment": "^2.18.1"
   }
 }

@@ -43,7 +43,7 @@ describe('Queue Scheduling Capabilities', function () {
   });
 
   it('should have job expiry key validator', function (done) {
-    expect(Queue._jobExpiryKeyValidator).to.exists;
+    expect(Queue._jobExpiryKeyValidator).to.exist;
     done();
   });
 
