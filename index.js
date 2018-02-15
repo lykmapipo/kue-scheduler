@@ -517,20 +517,9 @@ Queue.prototype._computeNextRunTime = function (jobData, done) {
     //compute next run from cron interval
     cron: function (after) {
       try {
-        //last run of the job is now if not exist
-        var lastRun =
-          jobData.lastRun ? new Date(jobData.lastRun) : new Date();
-
         //compute next date from the cron interval
         var cronTime = new CronTime(interval, timezone);
-        var nextRun = cronTime._getNextDateFrom(lastRun);
-
-        // Handle cronTime giving back the same date
-        // for the next run time
-        if (nextRun.valueOf() === lastRun.valueOf()) {
-          nextRun =
-            cronTime._getNextDateFrom(new Date(lastRun.valueOf() + 1000));
-        }
+        var nextRun = cronTime.sendAt();
 
         //return computed time
         after(null, nextRun.toDate());
