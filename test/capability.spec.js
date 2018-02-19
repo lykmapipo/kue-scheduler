@@ -184,7 +184,6 @@ describe('Queue Scheduling Capabilities', function () {
     it('should be able to compute next run from cron interval',
       function (done) {
         var lastRun = new Date();
-        lastRun.setSeconds(0);
 
         Queue._computeNextRunTime({
           reccurInterval: '* * * * * *',
