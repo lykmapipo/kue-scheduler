@@ -133,7 +133,7 @@ Queue.schedule('2 seconds from now', job);
 
 
 //somewhere process your scheduled jobs
-Queue.process('shedule', function(job, done) {
+Queue.process('schedule', function(job, done) {
     ...
     done();
 });
@@ -160,7 +160,7 @@ Queue.schedule('2 seconds from now', job);
 
 
 //somewhere process your scheduled jobs
-Queue.process('unique_shedule', function(job, done) {
+Queue.process('unique_schedule', function(job, done) {
     ...
     done();
 });
@@ -319,7 +319,7 @@ Queue.schedule('2 seconds from now', job);
 
 
 //somewhere process your scheduled jobs
-Queue.process('shedule', function(job, done) {
+Queue.process('schedule', function(job, done) {
     ...
     done();
 });
