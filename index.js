@@ -958,7 +958,7 @@ Queue.prototype.schedule = function (when, job, done) {
     function saveUniqueJob(job, next) {
       // if a unique name is specified, save it with the job details
       if (job.data && job.data.unique) {
-        let jobDataKey = this._getJobDataKey(job.data.unique);
+        var jobDataKey = this._getJobDataKey(job.data.unique);
         this._saveJobData(jobDataKey, job, function (error) {
           next(error, job);
         });
