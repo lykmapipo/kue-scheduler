@@ -213,7 +213,7 @@ Queue = kue.createQueue(options);
 
 ```
 
-- `worker:boolen` - tells `kue-scheduler` to listen and process job. Default to `true`. If set to `false` you need another `kue-scheduler` instance to process the scheduled jobs from othe process
+- `worker:boolen` - tells `kue-scheduler` to listen and process job. Default to `true`. If set to `false` you need another `kue-scheduler` instance to process the scheduled jobs from other process
 
 Example
 ```js
@@ -255,7 +255,7 @@ var kue = require('kue-scheduler');
 var Queue = kue.createQueue();
 
 //perform cleanup
-Queue.clear(fuction(error,response){
+Queue.clear(function(error,response){
     ...
 });
 ```
@@ -273,7 +273,7 @@ Queue.enableExpiryNotifications();
 ```
 
 ### `every(interval, job, [done])`
-Runs a given `job instance` every after a given `interval`. If `unique key` is provided only single instance job will exists otherwise on every run new job istance will be used.
+Runs a given `job instance` every after a given `interval`. If `unique key` is provided only single instance job will exists otherwise on every run new job instance will be used.
 
 `interval` can either be a [human-interval](https://github.com/rschmukler/human-interval) `String` format or a [cron](https://github.com/ncb000gt/node-cron) `String` format.
 
@@ -401,7 +401,7 @@ var kue = require('kue-scheduler');
 var Queue = kue.createQueue();
 
 //perform cleanup
-Queue.restore(fuction(error, schedules){
+Queue.restore(function(error, schedules){
     ...
 
 });
@@ -455,7 +455,7 @@ Use it to interact with `kue-scheduler` to be notified if the current instance o
 *Note: Use this event to attach instance level job events* 
 
 ```js
-//listen alrady scheduled jobs
+//listen on already scheduled jobs
 Queue.on('already scheduled', function(job) {
     ...
 });
@@ -517,7 +517,7 @@ Queue
     });
 ```
 
-### `restore error`
+### `restore success`
 Fired when `kue-scheduler` successfully restore previous schedules.
 
 ```js
@@ -530,7 +530,7 @@ Queue
 ```
 
 ### `restore error`
-Fired when `kue-scheduler` failt to restore previous schedules.
+Fired when `kue-scheduler` failed to restore previous schedules.
 
 ```js
 Queue
