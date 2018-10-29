@@ -1,6 +1,6 @@
 {
   "name": "kue-scheduler",
-  "version": "0.7.4",
+  "version": "0.8.0",
   "description": "A job scheduler utility for kue, backed by redis and built for node.js with support of schedules restore on system restart",
   "main": "index.js",
   "scripts": {
@@ -60,24 +60,24 @@
     }
   ],
   "dependencies": {
-    "async": "^2.5.0",
-    "cron": "^1.3.0",
+    "async": "^2.6.1",
+    "cron": "^1.4.1",
     "date.js": "^0.3.3",
     "human-interval": "^0.1.6",
     "kue": "^0.11.6",
     "kue-unique": "^1.0.2",
-    "lodash": "^4.17.10",
+    "lodash": "^4.17.11",
     "node-redis-warlock": "^0.2.0",
-    "uuid": "^3.1.0"
+    "uuid": "^3.3.2"
   },
   "devDependencies": {
-    "chai": "^4.1.0",
+    "chai": "^4.2.0",
     "faker": "^4.1.0",
     "grunt": "^1.0.3",
-    "grunt-contrib-jshint": "^1.1.0",
-    "grunt-mocha-test": "^0.13.2",
+    "grunt-contrib-jshint": "^2.0.0",
+    "grunt-mocha-test": "^0.13.3",
     "jshint-stylish": "^2.2.1",
-    "mocha": "^3.5.0",
+    "mocha": "^5.2.0",
     "moment": "^2.22.2"
   }
 }
