@@ -908,7 +908,8 @@ Queue.prototype.schedule = function (when, job, done) {
 
     function prepareJobDefinition(when, job, next) {
       var jobDefinition = _.extend(job.toJSON(), {
-        backoff: job._backoff
+        backoff: job._backoff,
+        removeOnComplete: job._removeOnComplete
       });
 
       next(null, when, job, jobDefinition);
