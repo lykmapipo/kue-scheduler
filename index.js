@@ -1467,7 +1467,7 @@ Queue.prototype.restore = function (done) {
   this._getAllJobData(function (error, data) {
     //backoff if error throw
     if (error) {
-      done(error);
+      done.bind(this, error);
     }
 
     //restore job schedules
