@@ -3,6 +3,7 @@
 //dependencies
 var expect = require('chai').expect;
 var path = require('path');
+var sinon = require('sinon');
 var kue = require(path.join(__dirname, '..', 'index'));
 var Queue;
 
@@ -70,4 +71,24 @@ describe('Queue Job Scheduler & Listener', function () {
     });
   });
 
+});
+
+describe('Queue Job Scheduler & Listener Errors', function () {
+    var _getAllJobDataStub;
+    function fakeGetAllJobData (callback) {
+        callback(new Error('Some error occurred'));
+    }
+    beforeEach(function (done) {
+        _getAllJobDataStub = sinon.stub(kue.prototype, '_getAllJobData').callsFake(fakeGetAllJobData);
+        done();
+    });
+    afterEach(function (done) {
+        _getAllJobDataStub.restore();
+        done();
+    });
+    it('should not die with `TypeError: Cannot read property \'emit\' of undefined` when `restore:true`', function (done) {
+        Queue = kue.createQueue({restore: true});
+        expect(_getAllJobDataStub.called).to.be.true;
+        done();
+    });
 });
