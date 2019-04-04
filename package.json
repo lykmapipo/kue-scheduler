@@ -60,25 +60,27 @@
     }
   ],
   "dependencies": {
-    "async": "^2.6.1",
-    "cron": "^1.6.0",
-    "date.js": "^0.3.3",
-    "human-interval": "^0.1.6",
-    "kue": "^0.11.6",
-    "kue-unique": "^1.0.3",
-    "lodash": "^4.17.11",
-    "node-redis-warlock": "^0.2.0",
-    "uuid": "^3.3.2"
+    "async": ">=2.6.2",
+    "cron": ">=1.7.0",
+    "date.js": ">=0.3.3",
+    "human-interval": ">=0.1.6",
+    "kue": ">=0.11.6",
+    "kue-unique": ">=1.0.3",
+    "lodash": ">=4.17.11",
+    "node-redis-warlock": ">=0.2.0",
+    "uuid": ">=3.3.2"
   },
   "devDependencies": {
     "chai": "^4.2.0",
     "faker": "^4.1.0",
-    "grunt": "^1.0.3",
-    "grunt-contrib-jshint": "^2.0.0",
+    "grunt": "^1.0.4",
+    "grunt-contrib-jshint": "^2.1.0",
     "grunt-mocha-test": "^0.13.3",
+    "js-yaml": "^3.13.0",
     "jshint-stylish": "^2.2.1",
-    "mocha": "^5.2.0",
-    "moment": "^2.23.0",
+    "mocha": "^6.0.2",
+    "moment": "^2.24.0",
+    "pug": "^2.0.3",
     "sinon": "7.3.1"
   }
 }
