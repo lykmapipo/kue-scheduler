@@ -78,6 +78,7 @@
     "grunt-mocha-test": "^0.13.3",
     "jshint-stylish": "^2.2.1",
     "mocha": "^5.2.0",
-    "moment": "^2.23.0"
+    "moment": "^2.23.0",
+    "sinon": "7.3.1"
   }
 }
