@@ -72,6 +72,7 @@
   },
   "devDependencies": {
     "chai": "^4.2.0",
+    "extend": "^3.0.2",
     "faker": "^4.1.0",
     "grunt": "^1.0.4",
     "grunt-contrib-jshint": "^2.1.0",
