@@ -1,3 +1,9 @@
+#### 0.8.3 (2019-04-12)
+
+##### Chores
+
+*  force latest dependencies ([ea8eec4d](https://github.com/lykmapipo/kue-scheduler/commit/ea8eec4d40266fb1f28cdc1fa47d9bcbff6e460a))
+
 #### 0.8.2 (2019-04-04)
 
 ##### Chores
