@@ -1,3 +1,11 @@
+#### 0.8.4 (2019-05-01)
+
+##### Chores
+
+* **.npmrc:**  prevent npm version to commit and tag version ([60013a0e](https://github.com/lykmapipo/kue-scheduler/commit/60013a0e069bb6c26c25ab0a9fe9fdc207ba6c76))
+* **deps:**  force latest version & audit fix ([504a0408](https://github.com/lykmapipo/kue-scheduler/commit/504a0408d19940b4e1bbf1aebcda2ed6cf5721b1))
+* **ci:**  force latest nodejs ([df934afa](https://github.com/lykmapipo/kue-scheduler/commit/df934afac28e528bca2e1448908d0d0c223d3e14))
+
 #### 0.8.3 (2019-04-12)
 
 ##### Chores
