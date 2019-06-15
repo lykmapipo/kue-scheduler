@@ -1,4 +1,4 @@
-import * as Kue from 'kue'; // eslint-disable-line import/no-extraneous-dependencies
+import * as Kue from 'kue-unique'; // eslint-disable-line import/no-extraneous-dependencies
 
 declare class Scheduler extends Kue.Queue {
   static createQueue(options: {
@@ -296,5 +296,32 @@ declare class Scheduler extends Kue.Queue {
    * @since 0.7.0
    */
   restore(done?: Function);
+
+  create(type: string, data: Object): Kue.Job;
+  createJob(type: string, data: Object): Kue.Job;
+  promote(ms?: number): void;
+  setupTimer(): void;
+  checkJobPromotion(ms: number): void;
+  checkActiveJobTtl(ttlOptions: Object): void;
+  watchStuckJobs(ms: number): void;
+  setting(name: string, fn: Function): Scheduler;
+  process(type: string, n?: number | Kue.ProcessCallback, fn?: Kue.ProcessCallback): void;
+  shutdown(timeout: number, fn: Function): Scheduler;
+  shutdown(timeout: number, type: string, fn: Function): Scheduler;
+  types(fn: Function): Scheduler;
+  state(string: string, fn: Function): Scheduler;
+  workTime(fn: Function): Scheduler;
+  cardByType(type: string, state: string, fn: Function): Scheduler;
+  card(state: string, fn: Function): Scheduler;
+  complete(fn: Function): Scheduler;
+  failed(fn: Function): Scheduler;
+  inactive(fn: Function): Scheduler;
+  active(fn: Function): Scheduler;
+  delayed(fn: Function): Scheduler;
+  completeCount(type: string, fn: Function): Scheduler;
+  failedCount(type: string, fn: Function): Scheduler;
+  inactiveCount(type: string, fn: Function): Scheduler;
+  activeCount(type: string, fn: Function): Scheduler;
+  delayedCount(type: string, fn: Function): Scheduler;
 }
 export = Scheduler;
