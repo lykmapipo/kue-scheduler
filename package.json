@@ -65,7 +65,7 @@
     "date.js": ">=0.3.3",
     "human-interval": ">=0.1.6",
     "kue": ">=0.11.6",
-    "kue-unique": ">=1.0.14",
+    "kue-unique": ">=1.0.15",
     "lodash": ">=4.17.15",
     "node-redis-warlock": ">=0.2.0",
     "uuid": ">=3.3.2"
@@ -84,6 +84,6 @@
     "moment": "^2.24.0",
     "pug": "^2.0.4",
     "shelljs": "^0.8.3",
-    "sinon": "7.3.2"
+    "sinon": "7.4.1"
   }
 }
