@@ -61,14 +61,14 @@
   ],
   "dependencies": {
     "async": ">=3.1.0",
-    "cron": ">=1.7.2",
+    "cron": ">=1.8.1",
     "date.js": ">=0.3.3",
     "human-interval": ">=1.0.0",
     "kue": ">=0.11.6",
-    "kue-unique": ">=1.0.24",
+    "kue-unique": ">=1.0.26",
     "lodash": ">=4.17.15",
     "node-redis-warlock": ">=0.2.0",
-    "uuid": ">=3.3.3"
+    "uuid": ">=3.4.0"
   },
   "devDependencies": {
     "chai": "^4.2.0",
@@ -77,13 +77,13 @@
     "grunt": "^1.0.4",
     "grunt-contrib-jshint": "^2.1.0",
     "grunt-mocha-test": "^0.13.3",
-    "handlebars": "^4.7.0",
+    "handlebars": "^4.7.2",
     "js-yaml": "^3.13.1",
     "jshint-stylish": "^2.2.1",
     "mocha": "^7.0.0",
     "moment": "^2.24.0",
     "pug": "^2.0.4",
     "shelljs": "^0.8.3",
-    "sinon": "8.0.4"
+    "sinon": "8.1.1"
   }
 }
