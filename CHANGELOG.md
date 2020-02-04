@@ -1,3 +1,9 @@
+#### 0.9.15 (2020-02-04)
+
+##### Chores
+
+* **deps:**  force latest version & audit fix ([1443bf54](https://github.com/lykmapipo/kue-scheduler/commit/1443bf546b355e658cb1193c543032dec2a90818))
+
 #### 0.9.14 (2020-01-22)
 
 ##### Chores
