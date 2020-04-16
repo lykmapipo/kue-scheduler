@@ -65,10 +65,10 @@
     "date.js": ">=0.3.3",
     "human-interval": ">=1.0.0",
     "kue": ">=0.11.6",
-    "kue-unique": ">=1.0.31",
+    "kue-unique": ">=1.0.32",
     "lodash": ">=4.17.15",
     "node-redis-warlock": ">=0.2.0",
-    "uuid": ">=7.0.2"
+    "uuid": ">=7.0.3"
   },
   "devDependencies": {
     "chai": "^4.2.0",
@@ -77,13 +77,13 @@
     "grunt": "^1.1.0",
     "grunt-contrib-jshint": "^2.1.0",
     "grunt-mocha-test": "^0.13.3",
-    "handlebars": "^4.7.3",
+    "handlebars": "^4.7.6",
     "js-yaml": "^3.13.1",
     "jshint-stylish": "^2.2.1",
     "mocha": "^7.1.1",
     "moment": "^2.24.0",
     "pug": "^2.0.4",
     "shelljs": "^0.8.3",
-    "sinon": "9.0.1"
+    "sinon": "9.0.2"
   }
 }
