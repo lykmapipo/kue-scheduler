@@ -65,10 +65,10 @@
     "date.js": ">=0.3.3",
     "human-interval": ">=1.0.0",
     "kue": ">=0.11.6",
-    "kue-unique": ">=1.0.32",
+    "kue-unique": ">=1.0.33",
     "lodash": ">=4.17.15",
     "node-redis-warlock": ">=0.2.0",
-    "uuid": ">=7.0.3"
+    "uuid": ">=8.0.0"
   },
   "devDependencies": {
     "chai": "^4.2.0",
@@ -80,10 +80,10 @@
     "handlebars": "^4.7.6",
     "js-yaml": "^3.13.1",
     "jshint-stylish": "^2.2.1",
-    "mocha": "^7.1.1",
-    "moment": "^2.24.0",
+    "mocha": "^7.1.2",
+    "moment": "^2.25.1",
     "pug": "^2.0.4",
-    "shelljs": "^0.8.3",
+    "shelljs": "^0.8.4",
     "sinon": "9.0.2"
   }
 }
