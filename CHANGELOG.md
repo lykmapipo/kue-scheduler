@@ -1,3 +1,9 @@
+#### 0.10.0 (2020-05-03)
+
+##### Refactors
+
+*  use latest uuid(v8+) api ([ed46ac83](https://github.com/lykmapipo/kue-scheduler/commit/ed46ac832f00154f97782fd71592ef403f710dd8))
+
 #### 0.9.21 (2020-05-01)
 
 ##### Chores
