@@ -5,7 +5,7 @@ var expect = require('chai').expect;
 var async = require('async');
 var faker = require('faker');
 var path = require('path');
-var uuid = require('uuid');
+var { v1: uuidv1 } = require('uuid');
 var kue = require(path.join(__dirname, '..', 'index'));
 var Queue;
 var options = {
@@ -48,7 +48,7 @@ describe('Queue Scheduling Capabilities', function () {
   });
 
   it('should be able to generate job expriration key', function (done) {
-    var jobuuid = uuid.v1();
+    var jobuuid = uuidv1();
 
     expect(Queue._getJobExpiryKey(jobuuid))
       .to.be.equal(options.prefix + ':scheduler:' + jobuuid);
@@ -57,7 +57,7 @@ describe('Queue Scheduling Capabilities', function () {
   });
 
   it('should be able to validate job expriration key', function (done) {
-    var validJobExpiryKey = Queue._getJobExpiryKey(uuid.v1());
+    var validJobExpiryKey = Queue._getJobExpiryKey(uuidv1());
 
     expect(Queue._isJobExpiryKey(validJobExpiryKey)).to.be.true;
     expect(Queue._isJobExpiryKey(faker.name.findName())).to.be.false;
@@ -66,7 +66,7 @@ describe('Queue Scheduling Capabilities', function () {
   });
 
   it('should be able to generate job data storage key', function (done) {
-    var jobuuid = uuid.v1();
+    var jobuuid = uuidv1();
 
     expect(Queue._getJobDataKey(jobuuid))
       .to.be.equal(options.prefix + ':scheduler:data:' + jobuuid);
@@ -76,7 +76,7 @@ describe('Queue Scheduling Capabilities', function () {
 
   it('should be able to generate job uuid from job expriration key',
     function (done) {
-      var jobuuid = uuid.v1();
+      var jobuuid = uuidv1();
       var jobEpiryKey = Queue._getJobExpiryKey(jobuuid);
 
       expect(Queue._getJobUUID(jobEpiryKey))
@@ -91,7 +91,7 @@ describe('Queue Scheduling Capabilities', function () {
     var jobData;
 
     before(function (done) {
-      jobuuid = uuid.v1();
+      jobuuid = uuidv1();
       jobDataKey = Queue._getJobDataKey(jobuuid);
       jobData = {
         uuid: jobuuid

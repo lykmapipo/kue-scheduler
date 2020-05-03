@@ -22,7 +22,7 @@ var redis = kue.redis;
 var _ = require('lodash');
 var async = require('async');
 var datejs = require('date.js');
-var uuid = require('uuid');
+var { v1: uuidv1 } = require('uuid');
 var humanInterval = require('human-interval');
 var warlock = require('node-redis-warlock');
 var CronTime = require('cron').CronTime;
@@ -96,7 +96,8 @@ function scheduleEveryJob(jobDefinition, jobUUID, done) {
 
     function obtainLock(next) {
       //TODO expose lock duration as configurations
-      this._warlock.lock(this._getJobLockKey(jobUUID), 1000, function (err, unlock) {
+      this._warlock.lock(this._getJobLockKey(jobUUID), 1000, function (err,
+        unlock) {
         if (!unlock) {
           next(new Error('Job already locked, skipping...'));
         } else {
@@ -152,7 +153,8 @@ function scheduleEveryJob(jobDefinition, jobUUID, done) {
     }.bind(this),
 
     //schedule job for next run
-    function setJobKeyExpiry(unlock, delay, jobExpiryKey, jobDefinition, next) {
+    function setJobKeyExpiry(unlock, delay, jobExpiryKey, jobDefinition,
+      next) {
       //save key if not exists and wait for it to expiry
       this._scheduler.set(jobExpiryKey, jobExpiryKey, 'PX', delay, 'NX',
         function (error) {
@@ -268,7 +270,7 @@ Queue.prototype._generateJobUUID = function (jobDefinition) {
 
   //otherwise generate uuid
   else {
-    return uuid.v1();
+    return uuidv1();
   }
 
 };
@@ -338,7 +340,7 @@ Queue.prototype._saveJobData = function (jobDataKey, jobData, done) {
   //TODO make use of redis hash i.e redis.hmset(<key>, <data>);
   this
     ._scheduler
-    .set(jobDataKey, JSON.stringify(jobData), function (error /*, response*/) {
+    .set(jobDataKey, JSON.stringify(jobData), function (error /*, response*/ ) {
       done(error, jobData);
     });
 };
@@ -407,33 +409,33 @@ Queue.prototype._buildJob = function (jobDefinition, done) {
   //this refer to kue Queue instance context
 
   async.parallel({
-    isDefined: function (next) {
-      //is job definition provided
-      var isObject = _.isPlainObject(jobDefinition);
-      if (!isObject) {
-        next(new Error('Invalid job definition'));
-      } else {
-        next(null, true);
+      isDefined: function (next) {
+        //is job definition provided
+        var isObject = _.isPlainObject(jobDefinition);
+        if (!isObject) {
+          next(new Error('Invalid job definition'));
+        } else {
+          next(null, true);
+        }
+      },
+      isValid: function (next) {
+        //check job for required attributes
+        //
+        //a valid job must have a type and
+        //associated data
+        var isValidJob = _.has(jobDefinition, 'type') &&
+          (
+            _.has(jobDefinition, 'data') &&
+            _.isPlainObject(jobDefinition.data)
+          );
+
+        if (!isValidJob) {
+          next(new Error('Missing job type or data'));
+        } else {
+          next(null, true);
+        }
       }
     },
-    isValid: function (next) {
-      //check job for required attributes
-      //
-      //a valid job must have a type and
-      //associated data
-      var isValidJob = _.has(jobDefinition, 'type') &&
-        (
-          _.has(jobDefinition, 'data') &&
-          _.isPlainObject(jobDefinition.data)
-        );
-
-      if (!isValidJob) {
-        next(new Error('Missing job type or data'));
-      } else {
-        next(null, true);
-      }
-    }
-  },
     function finish(error, validations) {
       //is not well formatted job
       //back-off
@@ -1098,7 +1100,7 @@ var shutdown = Queue.prototype.shutdown;
  * @return {Queue} for chaining
  * @api public
  */
-Queue.prototype.shutdown = function ( /*fn, timeout, type*/) {
+Queue.prototype.shutdown = function ( /*fn, timeout, type*/ ) {
   //this refer to kue Queue instance context
 
   //TODO ensure all client shutdown with waiting delay
@@ -1216,7 +1218,7 @@ kue.createQueue = function (options) {
  */
 Queue.prototype.remove = Queue.prototype.removeJob = function (criteria, done) {
   //normalize callback
-  done = done || function noop() { };
+  done = done || function noop() {};
 
   //compute criteria and job instance
   async.parallel({
@@ -1461,7 +1463,7 @@ Queue.prototype._getAllJobData = function (done) {
  */
 Queue.prototype.restore = function (done) {
   //ensure callback
-  done = _.isFunction(done) ? done : function () { };
+  done = _.isFunction(done) ? done : function () {};
 
   //fetch all job data
   this._getAllJobData(function (error, data) {
@@ -1476,7 +1478,8 @@ Queue.prototype.restore = function (done) {
       var schedules = _.map(data, function (schedule) {
 
         return function (next) {
-          scheduleEveryJob.call(this, schedule, this._generateJobUUID(schedule), next);
+          scheduleEveryJob.call(this, schedule, this._generateJobUUID(
+            schedule), next);
         }.bind(this);
 
       }.bind(this));

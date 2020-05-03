@@ -3,7 +3,7 @@
 //dependencies
 var expect = require('chai').expect;
 var path = require('path');
-var uuid = require('uuid');
+var { v1: uuidv1 } = require('uuid');
 var kue = require(path.join(__dirname, '..', 'index'));
 var Queue;
 
@@ -20,7 +20,7 @@ describe('Queue Schedules Restore', function () {
 
 
   before(function (done) {
-    jobuuid = uuid.v1();
+    jobuuid = uuidv1();
     jobDataKey = Queue._getJobDataKey(jobuuid);
     jobData = {
       uuid: jobuuid,

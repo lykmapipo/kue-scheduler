@@ -1,6 +1,6 @@
 language: node_js
 node_js:
-  - "11.12.0"
+  - node
 before_script:
   - npm install -g grunt-cli
   - redis-cli config set notify-keyspace-events Ex
