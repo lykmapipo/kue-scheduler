@@ -65,7 +65,7 @@
     "date.js": ">=0.3.3",
     "human-interval": ">=1.0.0",
     "kue": ">=0.11.6",
-    "kue-unique": ">=1.0.37",
+    "kue-unique": ">=1.0.38",
     "lodash": ">=4.17.15",
     "node-redis-warlock": ">=0.2.0",
     "uuid": ">=8.1.0"
@@ -80,8 +80,8 @@
     "handlebars": "^4.7.6",
     "js-yaml": "^3.14.0",
     "jshint-stylish": "^2.2.1",
-    "mocha": "^7.2.0",
-    "moment": "^2.26.0",
+    "mocha": "^8.0.1",
+    "moment": "^2.27.0",
     "pug": "^3.0.0",
     "shelljs": "^0.8.4",
     "sinon": "9.0.2"
