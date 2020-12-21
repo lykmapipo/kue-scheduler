@@ -1,3 +1,11 @@
+#### 0.10.15 (2020-12-21)
+
+##### Chores
+
+* **deps:**
+  *  force latest version & audit fix ([279ec753](https://github.com/lykmapipo/kue-scheduler/commit/279ec7536e2490bbc7e30a526a176264550d8c9c))
+  *  bump ini from 1.3.5 to 1.3.7 ([8cd63fcb](https://github.com/lykmapipo/kue-scheduler/commit/8cd63fcbac3a2d45961a4217b002b6bb582fae36))
+
 #### 0.10.14 (2020-10-07)
 
 ##### Chores
